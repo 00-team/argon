@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
-use super::{Def, GetRef, OaSchema, RefOr, SchemaFormat, SchemaType, Type};
 use serde::Deserialize;
 use std::collections::HashMap;
+
+use super::{common::*, format::SchemaFormat};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
