@@ -2,8 +2,8 @@ use serde::Deserialize;
 
 use super::{array::Array, object::Object, of::{AllOf, OneOf}};
 
-pub trait GetRef<'a>: Fn(&Ref) -> Option<&'a RefOr<OaSchema>> {}
-impl<'a, T: Fn(&Ref) -> Option<&'a RefOr<OaSchema>>> GetRef<'a> for T {}
+pub trait GetRef<'a>: Fn(&Ref) -> Option<(String, &'a RefOr<OaSchema>)> {}
+impl<'a, T: Fn(&Ref) -> Option<(String, &'a RefOr<OaSchema>)>> GetRef<'a> for T {}
 
 pub trait Def {
     fn def_ts<'a, F: GetRef<'a>>(&self, _get_ref: &F) -> String;

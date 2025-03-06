@@ -31,12 +31,10 @@ impl Def for Array {
 
         let xv = match &(*self.items) {
             RefOr::T(t) => t.def_ts(get_ref),
-            RefOr::Ref(r) => if get_ref(r).is_some() {
-                r.loc.split('/').last().unwrap()
-            } else {
-                "any"
-            }
-            .to_string(),
+            RefOr::Ref(r) => match get_ref(r) {
+                Some((i, _)) => i,
+                None => "any".to_string(),
+            },
         };
 
         format!("({xv}[])")

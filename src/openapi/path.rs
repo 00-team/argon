@@ -1,32 +1,26 @@
 use std::collections::HashMap;
 
-use super::common::{OaSchema, RefOr};
-use serde::Deserialize;
+use crate::openapi::common::Def;
 
-#[derive(Debug, Deserialize)]
-pub struct OaPath {
-    get: Option<Operation>,
-    put: Option<Operation>,
-    post: Option<Operation>,
-    delete: Option<Operation>,
-    patch: Option<Operation>,
-}
+use super::common::{GetRef, OaSchema, RefOr};
+use indoc::formatdoc;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PathItem {
-    pub summary: Option<String>,
-    pub description: Option<String>,
+    // pub summary: Option<String>,
+    // pub description: Option<String>,
     // pub servers: Option<Vec<Server>>,
-    pub parameters: Option<Vec<Parameter>>,
+    // pub parameters: Option<Vec<Parameter>>,
     pub get: Option<Operation>,
     pub put: Option<Operation>,
     pub post: Option<Operation>,
-    pub delete: Option<Operation>,
-    pub options: Option<Operation>,
-    pub head: Option<Operation>,
     pub patch: Option<Operation>,
-    pub trace: Option<Operation>,
+    pub delete: Option<Operation>,
+    // pub options: Option<Operation>,
+    // pub head: Option<Operation>,
+    // pub trace: Option<Operation>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -63,6 +57,104 @@ pub struct Operation {
     pub responses: HashMap<String, RefOr<Response>>,
     pub deprecated: Option<bool>,
     // pub security: Option<Vec<SecurityRequirement>>,
+}
+
+impl Operation {
+    pub fn def_ts<'a, F: GetRef<'a>>(&self, url: &str, method: &str, get_ref: &F) -> String {
+        let name = Self::url_to_name(url, method);
+        macro_rules! deopt {
+            ($name:ident) => {
+                match &self.$name {
+                    Some(v) => v.as_str(),
+                    None => "",
+                }
+            };
+        }
+
+        let sum = deopt!(summary);
+        let des = deopt!(description);
+        let mut input = String::from("{");
+
+        if let Some(ps) = &self.parameters {
+            let mut def = String::from("{");
+            for p in ps {
+                def.push_str(&p.name);
+                if !p.required {
+                    def.push('?');
+                }
+                def.push(':');
+                let Some(s) = &p.schema else {
+                    def.push_str("any,");
+                    continue;
+                };
+
+                let ty = match s {
+                    RefOr::T(t) => t.def_ts(get_ref),
+                    RefOr::Ref(r) => match get_ref(&r) {
+                        Some((i, _)) => i,
+                        None => "any".to_string(),
+                    },
+                };
+                def.push_str(&ty);
+                def.push(',');
+            }
+            def.push('}');
+            if !ps.is_empty() {
+                input.push_str("params:");
+                input.push_str(&def);
+                input.push(',');
+            }
+        }
+
+        if let Some(rqb) = &self.request_body {
+            // rqb.required;
+            // rqb.description;
+            // rqb.content;
+        }
+
+        input.push('}');
+        formatdoc! {"
+            /**
+            {sum}
+            {des}
+            */
+            export function {name} (input: {input}) : void {{
+                /*
+                    {:#?}
+                    {url}
+                */
+            }}
+        ",
+            self.request_body
+        }
+    }
+
+    fn url_to_name(url: &str, method: &str) -> String {
+        let mut name = String::with_capacity(url.len() + method.len() + 10);
+        let mut pu = false;
+        let cc = url.chars().count();
+        for (i, c) in url.chars().enumerate() {
+            if matches!(c, '/' | '-' | '_' | '.' | '}' | '{') {
+                if pu || i == 0 || i + 1 == cc {
+                    continue;
+                }
+                pu = true;
+                name.push('_');
+                continue;
+            }
+            pu = false;
+            name.push(c);
+        }
+
+        // println!("{name}");
+
+        if !pu {
+            name.push('_');
+        }
+        name.push_str(method);
+
+        name
+    }
 }
 
 #[derive(Debug, Deserialize, Default)]
