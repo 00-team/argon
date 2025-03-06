@@ -3,7 +3,10 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-use super::{common::*, format::SchemaFormat};
+use super::{
+    common::*,
+    format::{KnownFormat, SchemaFormat},
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -132,6 +135,10 @@ impl Def for Object {
                         uni.push(format!(r##""{}""##, v.as_str().unwrap()));
                     }
                     return uni.join("|");
+                }
+
+                if let Some(SchemaFormat::KnownFormat(KnownFormat::Binary)) = &self.format {
+                    return "File".to_string();
                 }
 
                 "string".to_string()

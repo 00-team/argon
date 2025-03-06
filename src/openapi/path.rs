@@ -60,8 +60,14 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub fn def_ts<'a, F: GetRef<'a>>(&self, url: &str, method: &str, get_ref: &F) -> String {
-        let name = Self::url_to_name(url, method);
+    pub fn def_ts<'a, F: GetRef<'a>>(
+        &self,
+        url: &str,
+        method: &str,
+        get_ref: &F,
+        has_name: &impl Fn(&str) -> bool,
+    ) -> (String, String) {
+        let name = Self::url_to_name(url, method, has_name);
         macro_rules! deopt {
             ($name:ident) => {
                 match &self.$name {
@@ -73,13 +79,17 @@ impl Operation {
 
         let sum = deopt!(summary);
         let des = deopt!(description);
-        let mut input = String::from("{");
+        let mut input = Vec::<String>::with_capacity(2);
+        let mut params_names = Vec::<&str>::new();
 
         if let Some(ps) = &self.parameters {
             let mut def = String::from("{");
+            params_names.reserve_exact(ps.len());
             for p in ps {
                 def.push_str(&p.name);
+                params_names.push(&p.name);
                 if !p.required {
+                    assert!(false);
                     def.push('?');
                 }
                 def.push(':');
@@ -100,36 +110,53 @@ impl Operation {
             }
             def.push('}');
             if !ps.is_empty() {
-                input.push_str("params:");
-                input.push_str(&def);
-                input.push(',');
+                input.push(format!("params: {def}"))
             }
         }
 
-        if let Some(rqb) = &self.request_body {
-            // rqb.required;
-            // rqb.description;
-            // rqb.content;
+        if let Some(rq) = &self.request_body {
+            let mut body = String::from("body");
+            if !rq.required.unwrap_or(false) {
+                body.push('?');
+            }
+            body.push(':');
+            body.push_str(&rq.def_ts(get_ref));
+            input.push(body);
         }
 
-        input.push('}');
-        formatdoc! {"
+        let input = input.join(",");
+        let ts_url = url.replace('{', "${");
+        let mut unwrap_params = String::new();
+        if !params_names.is_empty() {
+            unwrap_params += &format!("let {{ {} }} = params;", params_names.join(","));
+        }
+
+        let method_upper = method.to_uppercase();
+
+        let def = formatdoc! {r#"
             /**
             {sum}
             {des}
             */
-            export function {name} (input: {input}) : void {{
+            export async function {name} ({input}) : Promise<void> {{
+                {unwrap_params}
+                new Promise((resolve, reject) => {{
+                    ud.httpx({{
+                        url: `{ts_url}`,
+                        method: "{method_upper}",
+                        reject,
+                    }})
+                }})
                 /*
-                    {:#?}
                     {url}
                 */
             }}
-        ",
-            self.request_body
-        }
+        "#,
+        };
+        (def, name)
     }
 
-    fn url_to_name(url: &str, method: &str) -> String {
+   fn url_to_name(url: &str, method: &str, has_name: &impl Fn(&str) -> bool) -> String {
         let mut name = String::with_capacity(url.len() + method.len() + 10);
         let mut pu = false;
         let cc = url.chars().count();
@@ -187,4 +214,29 @@ pub struct RequestBody {
     pub description: Option<String>,
     pub content: HashMap<String, Content>,
     pub required: Option<bool>,
+}
+
+impl Def for RequestBody {
+    fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String {
+        assert!(self.required.is_some());
+        assert_eq!(self.content.len(), 1);
+        let (ct, c) = self.content.iter().next().unwrap();
+        let Some(cs) = &c.schema else {
+            return "any".to_string();
+        };
+        match ct.as_str() {
+            "application/json" | "multipart/form-data" => {
+                match cs {
+                    RefOr::Ref(r) => match get_ref(r) {
+                        Some((i, _)) => i,
+                        None => "any".to_string(),
+                    },
+                    RefOr::T(t) => t.def_ts(get_ref),
+                }
+                // println!("{c:#?}");
+            }
+            "text/plain" => "string".to_string(),
+            _ => panic!("unknown request body content: {ct}"),
+        }
+    }
 }
