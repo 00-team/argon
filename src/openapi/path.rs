@@ -1,3 +1,4 @@
+use core::panic;
 use std::collections::HashMap;
 
 use crate::openapi::common::Def;
@@ -61,13 +62,10 @@ pub struct Operation {
 
 impl Operation {
     pub fn def_ts<'a, F: GetRef<'a>>(
-        &self,
-        url: &str,
-        method: &str,
-        get_ref: &F,
+        &self, url: &str, method: &str, get_ref: &F,
         has_name: &impl Fn(&str) -> bool,
     ) -> (String, String) {
-        let name = Self::url_to_name(url, method, has_name);
+        let name = self.url_to_name(url, method, get_ref, has_name);
         macro_rules! deopt {
             ($name:ident) => {
                 match &self.$name {
@@ -128,7 +126,8 @@ impl Operation {
         let ts_url = url.replace('{', "${");
         let mut unwrap_params = String::new();
         if !params_names.is_empty() {
-            unwrap_params += &format!("let {{ {} }} = params;", params_names.join(","));
+            unwrap_params +=
+                &format!("let {{ {} }} = params;", params_names.join(","));
         }
 
         let method_upper = method.to_uppercase();
@@ -156,7 +155,30 @@ impl Operation {
         (def, name)
     }
 
-   fn url_to_name(url: &str, method: &str, has_name: &impl Fn(&str) -> bool) -> String {
+    fn is_list<'a, F: GetRef<'a>>(&self, get_ref: &F) -> bool {
+        let Some(res) = self.responses.get("200") else { return false };
+        let RefOr::T(res) = res else { panic!("response is a ref") };
+        let Some(c) = res.content.get("application/json") else { return false };
+        let Some(c) = &c.schema else { return false };
+        let c = match &c {
+            RefOr::T(t) => t,
+            RefOr::Ref(r) => {
+                let Some((_, x)) = get_ref(r) else { return false };
+                let RefOr::T(x) = x else { return false };
+                x
+            }
+        };
+
+        let OaSchema::Array(_) = c else { return false };
+
+        true
+    }
+
+    fn url_to_name<'a, F: GetRef<'a>>(
+        &self, url: &str, method: &str, get_ref: &F,
+        _has_name: &impl Fn(&str) -> bool,
+    ) -> String {
+        let is_list = self.is_list(get_ref);
         let mut name = String::with_capacity(url.len() + method.len() + 10);
         let mut pu = false;
         let cc = url.chars().count();
@@ -178,7 +200,11 @@ impl Operation {
         if !pu {
             name.push('_');
         }
-        name.push_str(method);
+        if is_list && method == "get" {
+            name.push_str("list");
+        } else {
+            name.push_str(method);
+        }
 
         name
     }

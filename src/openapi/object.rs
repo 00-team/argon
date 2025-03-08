@@ -137,7 +137,9 @@ impl Def for Object {
                     return uni.join("|");
                 }
 
-                if let Some(SchemaFormat::KnownFormat(KnownFormat::Binary)) = &self.format {
+                if let Some(SchemaFormat::KnownFormat(KnownFormat::Binary)) =
+                    &self.format
+                {
                     return "File".to_string();
                 }
 

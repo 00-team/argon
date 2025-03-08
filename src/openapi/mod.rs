@@ -9,7 +9,11 @@ mod path;
 
 use indoc::formatdoc;
 use serde::Deserialize;
-use std::{collections::{HashMap, HashSet}, fs::read_to_string, io::Write};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::read_to_string,
+    io::Write,
+};
 
 use self::common::{Def, Ref, RefOr};
 
@@ -31,7 +35,8 @@ pub fn generate() -> std::io::Result<()> {
         .truncate(true)
         .open("data/out.ts")?;
 
-    let oa: OpenApi = serde_json::from_str(&read_to_string("data/openapi.json")?)?;
+    let oa: OpenApi =
+        serde_json::from_str(&read_to_string("data/openapi.json")?)?;
 
     std::fs::write("data/debug.txt", format!("{:#?}", oa.paths))?;
 
@@ -64,7 +69,8 @@ pub fn generate() -> std::io::Result<()> {
         macro_rules! dop {
             ($name:ident) => {
                 if let Some(op) = &p.$name {
-                    let (def, name) = op.def_ts(url, stringify!($name), &get_ref, &has_name);
+                    let (def, name) =
+                        op.def_ts(url, stringify!($name), &get_ref, &has_name);
                     names.insert(name);
                     ts.write_all(def.as_bytes())?;
                 }
