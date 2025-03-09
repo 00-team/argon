@@ -1,11 +1,9 @@
-use core::panic;
-use std::collections::HashMap;
-
-use crate::openapi::common::Def;
-
 use super::common::{GetRef, OaSchema, RefOr};
+use crate::openapi::common::Def;
+use core::panic;
 use indoc::formatdoc;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -79,6 +77,7 @@ impl Operation {
         let des = deopt!(description);
         let mut input = Vec::<String>::with_capacity(2);
         let mut params_names = Vec::<&str>::new();
+        let mut query_params = Vec::<&str>::new();
 
         if let Some(ps) = &self.parameters {
             let mut def = String::from("{");
@@ -86,6 +85,9 @@ impl Operation {
             for p in ps {
                 def.push_str(&p.name);
                 params_names.push(&p.name);
+                if matches!(p.parameter_in, ParameterIn::Query) {
+                    query_params.push(&p.name);
+                }
                 if !p.required {
                     assert!(false);
                     def.push('?');
@@ -130,29 +132,116 @@ impl Operation {
                 &format!("let {{ {} }} = params;", params_names.join(","));
         }
 
+        let query_params = query_params.join(",");
+
         let method_upper = method.to_uppercase();
+        let (outy, http_out_type) = self.output_type(get_ref);
+        let (body, content_type) = self.body(get_ref);
 
         let def = formatdoc! {r#"
             /**
             {sum}
             {des}
             */
-            export async function {name} ({input}) : Promise<void> {{
+            export async function {name} ({input}) : Promise<ud.Result<{outy}>> {{
                 {unwrap_params}
-                new Promise((resolve, reject) => {{
+                {body}
+                return new Promise((resolve, reject) => {{
                     ud.httpx({{
                         url: `{ts_url}`,
                         method: "{method_upper}",
+                        params: {{ {query_params} }},
+                        type: "{http_out_type}",
+                        headers: {{
+                            'Content-Type': "{content_type}",
+                        }},
+                        data,
                         reject,
+                        onLoad(x) {{
+                            resolve({{
+                                ok: x.status == 200,
+                                status: x.status,
+                                body: x.response,
+                            }})
+                        }}
                     }})
                 }})
-                /*
-                    {url}
-                */
             }}
         "#,
         };
         (def, name)
+    }
+
+    fn body<'a, F: GetRef<'a>>(&self, get_ref: &F) -> (String, &str) {
+        let Some(rq) = &self.request_body else {
+            return ("let data = undefined;".to_string(), "");
+        };
+        let (ct, cc) = rq.content.iter().next().unwrap();
+        match ct.as_str() {
+            "multipart/form-data" => {
+                let Some(cs) = &cc.schema else { panic!("no schema") };
+                let mut out = String::from("let data = new FormData;\n");
+                let cs = match cs {
+                    RefOr::T(t) => t,
+                    RefOr::Ref(r) => {
+                        let RefOr::T(t) = get_ref(r).unwrap().1 else {
+                            panic!("nested ref")
+                        };
+                        t
+                    }
+                };
+
+                let OaSchema::Object(cs) = cs else { panic!("must be object") };
+                for (k, p) in cs.properties.iter() {
+                    out.push_str(r#"data.set('"#);
+                    out.push_str(k);
+                    out.push_str("', ");
+                    match p {
+                        RefOr::T(_) => {
+                            out.push_str("body.");
+                            out.push_str(k);
+                            // out.push_str(" + ''");
+                        }
+                        RefOr::Ref(_) => {
+                            out.push_str("new Blob([JSON.stringify(");
+                            out.push_str("body.");
+                            out.push_str(k);
+                            out.push_str(")], { type: 'application/json' })");
+                        }
+                    }
+                    out.push_str(");\n");
+                }
+
+                // out.push_str(&format!("/*{cs:#?}*/"));
+
+                (out, "multipart/form-data")
+            }
+            "application/json" => (
+                "let data = JSON.stringify(body);".to_string(),
+                "application/json",
+            ),
+            "text/plain" => ("let data = body;".to_string(), "text/plain"),
+            _ => panic!("unknown request body: {ct}"),
+        }
+    }
+
+    fn output_type<'a, F: GetRef<'a>>(&self, get_ref: &F) -> (String, String) {
+        let json_ty = String::from("json");
+        let Some(RefOr::T(res)) = self.responses.get("200") else {
+            return ("any".to_string(), json_ty);
+        };
+        if res.content.is_empty() {
+            return ("void".to_string(), json_ty);
+        }
+        assert_eq!(res.content.len(), 1);
+        let (ct, cc) = res.content.iter().next().unwrap();
+        if ct == "text/plain" {
+            return ("string".to_string(), "text".to_string());
+        }
+        assert_eq!(ct, "application/json");
+        let Some(cc) = &cc.schema else { return ("any".to_string(), json_ty) };
+
+        (cc.def_ts(get_ref), json_ty)
     }
 
     fn is_list<'a, F: GetRef<'a>>(&self, get_ref: &F) -> bool {
@@ -181,8 +270,18 @@ impl Operation {
         let is_list = self.is_list(get_ref);
         let mut name = String::with_capacity(url.len() + method.len() + 10);
         let mut pu = false;
+        let mut skip = false;
         let cc = url.chars().count();
         for (i, c) in url.chars().enumerate() {
+            if c == '{' {
+                skip = true;
+            }
+            if c == '}' {
+                skip = false;
+            }
+            if skip {
+                continue;
+            }
             if matches!(c, '/' | '-' | '_' | '.' | '}' | '{') {
                 if pu || i == 0 || i + 1 == cc {
                     continue;
@@ -195,13 +294,13 @@ impl Operation {
             name.push(c);
         }
 
-        // println!("{name}");
-
         if !pu {
             name.push('_');
         }
         if is_list && method == "get" {
             name.push_str("list");
+        } else if method == "delete" {
+            name.push_str("del");
         } else {
             name.push_str(method);
         }
