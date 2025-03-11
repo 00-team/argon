@@ -20,6 +20,22 @@ impl Def for OneOf {
 
         uni.join("|")
     }
+
+    fn is_user_defined(&self) -> bool {
+        if let Some(s) = &self.description {
+            if s.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.title {
+            if s.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 // #[derive(Debug, Deserialize)]
@@ -49,5 +65,21 @@ impl Def for AllOf {
         }
 
         and.join("&")
+    }
+
+    fn is_user_defined(&self) -> bool {
+        if let Some(s) = &self.description {
+            if s.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.title {
+            if s.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        false
     }
 }

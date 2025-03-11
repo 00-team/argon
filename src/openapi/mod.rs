@@ -1,17 +1,16 @@
 #![allow(dead_code)]
 
-mod array;
-mod common;
-mod format;
-mod object;
-mod of;
-mod path;
+pub mod array;
+pub mod common;
+pub mod format;
+pub mod object;
+pub mod of;
+pub mod path;
 
 use indoc::formatdoc;
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
-    fs::read_to_string,
     io::Write,
 };
 
@@ -28,17 +27,12 @@ pub struct OaComponents {
     pub schemas: HashMap<String, common::RefOr<common::OaSchema>>,
 }
 
-pub fn generate() -> std::io::Result<()> {
+pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
     let mut ts = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .open("data/out.ts")?;
-
-    let oa: OpenApi =
-        serde_json::from_str(&read_to_string("data/openapi.json")?)?;
-
-    std::fs::write("data/debug.txt", format!("{:#?}", oa.paths))?;
 
     let get_ref = |loc: &Ref| {
         let i = loc.loc.split('/').last().unwrap();
@@ -59,6 +53,9 @@ pub fn generate() -> std::io::Result<()> {
         let RefOr::T(s) = s else { continue };
 
         let def = s.def_ts(&get_ref);
+        if s.is_user_defined() {
+            continue;
+        }
         ts.write_all(format!("export type {ident} = {def};\n").as_bytes())?;
     }
 

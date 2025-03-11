@@ -39,4 +39,19 @@ impl Def for Array {
 
         format!("({xv}[])")
     }
+    fn is_user_defined(&self) -> bool {
+        if let Some(desc) = &self.description {
+            if desc.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        if let Some(tit) = &self.title {
+            if tit.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        false
+    }
 }

@@ -159,7 +159,7 @@ impl Operation {
                         reject,
                         onLoad(x) {{
                             resolve({{
-                                ok: x.status == 200,
+                                // ok: x.status == 200,
                                 status: x.status,
                                 body: x.response,
                             }})
@@ -363,5 +363,15 @@ impl Def for RequestBody {
             "text/plain" => "string".to_string(),
             _ => panic!("unknown request body content: {ct}"),
         }
+    }
+
+    fn is_user_defined(&self) -> bool {
+        if let Some(s) = &self.description {
+            if s.contains("#user_defined") {
+                return true;
+            }
+        }
+
+        false
     }
 }

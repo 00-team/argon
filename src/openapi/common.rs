@@ -16,7 +16,8 @@ impl<'a, T: Fn(&Ref) -> Option<(String, &'a RefOr<OaSchema>)>> GetRef<'a>
 }
 
 pub trait Def {
-    fn def_ts<'a, F: GetRef<'a>>(&self, _get_ref: &F) -> String;
+    fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String;
+    fn is_user_defined(&self) -> bool;
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +50,15 @@ impl Def for OaSchema {
             Self::AnyOf => todo!("any of ??"),
         };
         format!("({x})")
+    }
+    fn is_user_defined(&self) -> bool {
+        match self {
+            Self::Object(o) => o.is_user_defined(),
+            Self::AllOf(o) => o.is_user_defined(),
+            Self::OneOf(o) => o.is_user_defined(),
+            Self::Array(o) => o.is_user_defined(),
+            Self::AnyOf => false,
+        }
     }
 }
 
@@ -96,5 +106,11 @@ impl<T: Def> Def for RefOr<T> {
             }
         };
         format!("({x})")
+    }
+    fn is_user_defined(&self) -> bool {
+        match self {
+            Self::T(t) => t.is_user_defined(),
+            Self::Ref(_) => false,
+        }
     }
 }
