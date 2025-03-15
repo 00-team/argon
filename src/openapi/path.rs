@@ -124,6 +124,7 @@ impl Operation {
             input.push(body);
         }
 
+        input.push("override: Partial<ud.HttpxProps> = {}".to_string());
         let input = input.join(",");
         let ts_url = url.replace('{', "${");
         let mut unwrap_params = String::new();
@@ -162,8 +163,15 @@ impl Operation {
                                 // ok: x.status == 200,
                                 status: x.status,
                                 body: x.response,
+                                ok(): this is ud.Ok<{outy}> {{
+                                    return this.status == 200
+                                }},
+                                err(): this is ud.Err {{
+                                    return !this.ok()
+                                }},
                             }})
-                        }}
+                        }},
+                        ...override
                     }})
                 }})
             }}

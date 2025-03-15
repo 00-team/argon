@@ -1,5 +1,6 @@
 pub trait AsStatic<T> {
     fn as_static(&self) -> &'static T;
+    #[allow(dead_code)]
     fn as_static_mut(&mut self) -> &'static mut T;
 }
 

@@ -20,6 +20,12 @@ use self::common::{Def, Ref, RefOr};
 pub struct OpenApi {
     pub paths: HashMap<String, path::PathItem>,
     pub components: OaComponents,
+    pub info: OaInfo,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OaInfo {
+    pub version: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -32,7 +38,7 @@ pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
         .write(true)
         .create(true)
         .truncate(true)
-        .open("data/out.ts")?;
+        .open("data/gen.ts")?;
 
     let get_ref = |loc: &Ref| {
         let i = loc.loc.split('/').last().unwrap();
@@ -49,6 +55,10 @@ pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
         .as_bytes(),
     )?;
 
+    ts.write_all(b"export const API_VERSION = '")?;
+    ts.write_all(oa.info.version.as_bytes())?;
+    ts.write_all(b"';\n\n\n")?;
+
     for (ident, s) in oa.components.schemas.iter() {
         let RefOr::T(s) = s else { continue };
 
@@ -64,20 +74,16 @@ pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
 
     for (url, p) in oa.paths.iter() {
         macro_rules! dop {
-            ($name:ident) => {
-                if let Some(op) = &p.$name {
-                    let (def, name) =
-                        op.def_ts(url, stringify!($name), &get_ref, &has_name);
+            ($($name:ident),*) => {
+                $(if let Some(op) = &p.$name {
+                    let (def, name) = op.def_ts(url, stringify!($name), &get_ref, &has_name);
                     names.insert(name);
                     ts.write_all(def.as_bytes())?;
-                }
+                })*
             };
         }
-        dop!(get);
-        dop!(put);
-        dop!(post);
-        dop!(delete);
-        dop!(patch);
+
+        dop!(get, put, post, delete, patch);
     }
 
     Ok(())

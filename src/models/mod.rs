@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::panic;
 use std::io::Write;
 
@@ -44,7 +46,7 @@ impl ApiSchema {
                     };
                     match ty {
                         Type::Object => {
-                            let mut obj = Object {
+                            let mut _obj = Object {
                                 properties: Vec::with_capacity(
                                     o.properties.len(),
                                 ),

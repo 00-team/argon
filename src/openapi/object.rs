@@ -119,7 +119,12 @@ impl Def for Object {
     fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String {
         let ty = match &self.schema_type {
             SchemaType::AnyValue => return "any".to_string(),
-            SchemaType::Array(v) => todo!("do this: {v:?}"),
+            SchemaType::Array(v) => {
+                if v[0] == Type::String && v[1] == Type::Null {
+                    return "string | null".to_string();
+                }
+                todo!("type array: {v:?}");
+            }
             SchemaType::Type(t) => t,
         };
 
@@ -169,7 +174,12 @@ impl Def for Object {
                 "number".to_string()
             }
             Type::Boolean => "boolean".to_string(),
-            _ => todo!("wtf is {ty:?}"),
+            Type::Null => "null".to_string(),
+            Type::Array => {
+                "[]".to_string()
+                // println!("{self:#?}");
+                // todo!("hi")
+            }
         }
     }
 
