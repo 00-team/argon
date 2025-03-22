@@ -164,6 +164,9 @@ impl Def for Object {
                     o.push_str(k);
                     o.push_str(": ");
                     o.push_str(&xv);
+                    if xv == "Gene" {
+                        o.push_str(" | null");
+                    }
                     o.push_str(",\n");
                 }
                 o.push_str("}\n");

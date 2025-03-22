@@ -37,6 +37,17 @@ impl Def for Array {
             },
         };
 
+        let xv = if xv == "Gene" { "(Gene | null)".to_string() } else { xv };
+
+        if let Some(min) = self.min_items {
+            let fixed = self.max_items.map(|v| v == min).unwrap_or(false);
+            let t = (0..min).map(|_| xv.as_str()).collect::<Vec<_>>().join(",");
+            if fixed {
+                return format!("([{t}])");
+            }
+            return format!("([{t}, ...({xv}[])])");
+        }
+
         format!("({xv}[])")
     }
     fn is_user_defined(&self) -> bool {
