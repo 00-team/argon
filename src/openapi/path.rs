@@ -138,6 +138,11 @@ impl Operation {
         let method_upper = method.to_uppercase();
         let (outy, http_out_type) = self.output_type(get_ref);
         let (body, content_type) = self.body(get_ref);
+        let headers = if content_type == "multipart/form-data" {
+            "{}".to_string()
+        } else {
+            format!("{{ 'Content-Type': '{content_type}' }}")
+        };
 
         let def = formatdoc! {r#"
             /**
@@ -153,9 +158,7 @@ impl Operation {
                         method: "{method_upper}",
                         params: {{ {query_params} }},
                         type: "{http_out_type}",
-                        headers: {{
-                            'Content-Type': "{content_type}",
-                        }},
+                        headers: {headers},
                         data,
                         reject,
                         onLoad(x) {{
