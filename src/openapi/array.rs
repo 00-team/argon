@@ -2,12 +2,60 @@ use super::common::*;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ArrayItems {
+    R(Box<RefOr<OaSchema>>),
+    #[serde(with = "array_items_false")]
+    False,
+}
+
+mod array_items_false {
+    use serde::de::Visitor;
+
+    pub fn serialize<S: serde::Serializer>(
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bool(false)
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<(), D::Error> {
+        struct ItemsFalseVisitor;
+
+        impl<'de> Visitor<'de> for ItemsFalseVisitor {
+            type Value = ();
+            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if !v {
+                    Ok(())
+                } else {
+                    Err(serde::de::Error::custom(format!(
+                        "invalid boolean value: {v}, expected false"
+                    )))
+                }
+            }
+
+            fn expecting(
+                &self, formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("expected boolean false")
+            }
+        }
+
+        deserializer.deserialize_bool(ItemsFalseVisitor)
+    }
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Array {
     #[serde(rename = "type")]
     pub schema_type: SchemaType,
     pub title: Option<String>,
-    pub items: Box<RefOr<OaSchema>>,
+    pub items: ArrayItems,
     #[serde(default)]
     pub prefix_items: Vec<OaSchema>,
     pub description: Option<String>,
@@ -29,7 +77,17 @@ impl Def for Array {
     fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String {
         assert!(matches!(self.schema_type, SchemaType::Type(Type::Array)));
 
-        let xv = match &(*self.items) {
+        let ArrayItems::R(r) = &self.items else {
+            let items = self
+                .prefix_items
+                .iter()
+                .map(|s| s.def_ts(get_ref))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return format!("([{items}])");
+        };
+
+        let xv = match &(**r) {
             RefOr::T(t) => t.def_ts(get_ref),
             RefOr::Ref(r) => match get_ref(r) {
                 Some((i, _)) => i,
