@@ -38,7 +38,7 @@ pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
         .write(true)
         .create(true)
         .truncate(true)
-        .open("data/gen.ts")?;
+        .open("argon-data/gen.ts")?;
 
     let get_ref = |loc: &Ref| {
         let i = loc.loc.split('/').last().unwrap();

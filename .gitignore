@@ -6,3 +6,4 @@ Cargo.lock
 
 data/
 run.sh
+argon-data/

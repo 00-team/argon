@@ -7,7 +7,7 @@ mod openapi;
 mod utils;
 
 fn main() -> std::io::Result<()> {
-    let oas = read_to_string("data/openapi.json")?;
+    let oas = read_to_string("argon-data/openapi.json")?;
     let oa: OpenApi = serde_json::from_str(&oas)?;
 
     openapi::generate(&oa)?;

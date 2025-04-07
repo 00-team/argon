@@ -111,7 +111,7 @@ impl ApiSchema {
             .write(true)
             .create(true)
             .truncate(true)
-            .open("data/generated.ts")?;
+            .open("argon-data/generated.ts")?;
 
         ts.write_all("import * as ud from './user_defined';\n\n".as_bytes())?;
 
