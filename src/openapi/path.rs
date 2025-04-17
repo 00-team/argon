@@ -163,7 +163,7 @@ impl Operation {
                         reject,
                         onLoad(x) {{
                             resolve({{
-                                // ok: x.status == 200,
+                                x,
                                 status: x.status,
                                 body: x.response,
                                 ok(): this is ud.Ok<{outy}> {{
@@ -248,6 +248,9 @@ impl Operation {
         let (ct, cc) = res.content.iter().next().unwrap();
         if ct == "text/plain" {
             return ("string".to_string(), "text".to_string());
+        }
+        if ct == "application/octet-stream" {
+            return ("ArrayBuffer".to_string(), "arraybuffer".to_string());
         }
         assert_eq!(ct, "application/json");
         let Some(cc) = &cc.schema else { return ("any".to_string(), json_ty) };
