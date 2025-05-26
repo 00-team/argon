@@ -76,6 +76,17 @@ pub struct Array {
 impl Def for Array {
     fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String {
         assert!(matches!(self.schema_type, SchemaType::Type(Type::Array)));
+        // let mut or_null = "";
+        // match &self.schema_type {
+        //     SchemaType::Type(Type::Array) => {}
+        //     SchemaType::Array(vt) => {
+        //         if vt[0] == Type::Array && vt[1] == Type::Null {
+        //             or_null = "| null";
+        //         }
+        //         todo!("schema array: {vt:?}");
+        //     }
+        //     _ => panic!("unknown array type: {self:?}"),
+        // }
 
         let ArrayItems::R(r) = &self.items else {
             let items = self
