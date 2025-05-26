@@ -75,18 +75,21 @@ pub struct Array {
 
 impl Def for Array {
     fn def_ts<'a, F: GetRef<'a>>(&self, get_ref: &F) -> String {
-        assert!(matches!(self.schema_type, SchemaType::Type(Type::Array)));
-        // let mut or_null = "";
-        // match &self.schema_type {
-        //     SchemaType::Type(Type::Array) => {}
-        //     SchemaType::Array(vt) => {
-        //         if vt[0] == Type::Array && vt[1] == Type::Null {
-        //             or_null = "| null";
-        //         }
-        //         todo!("schema array: {vt:?}");
-        //     }
-        //     _ => panic!("unknown array type: {self:?}"),
+        // if !matches!(self.schema_type, SchemaType::Type(Type::Array)) {
+        //     panic!("wtf array: {self:#?}");
         // }
+        let mut or_null = String::with_capacity(32);
+        match &self.schema_type {
+            SchemaType::Type(Type::Array) => {}
+            SchemaType::Array(vt) => {
+                if vt[0] == Type::Array && vt[1] == Type::Null {
+                    or_null.push_str(" | null");
+                } else {
+                    todo!("schema array: {vt:?}");
+                }
+            }
+            _ => panic!("unknown array type: {self:?}"),
+        }
 
         let ArrayItems::R(r) = &self.items else {
             let items = self
@@ -95,14 +98,14 @@ impl Def for Array {
                 .map(|s| s.def_ts(get_ref))
                 .collect::<Vec<_>>()
                 .join(", ");
-            return format!("([{items}])");
+            return format!("(([{items}]){or_null})");
         };
 
         let xv = match &(**r) {
             RefOr::T(t) => t.def_ts(get_ref),
             RefOr::Ref(r) => match get_ref(r) {
                 Some((i, _)) => i,
-                None => "any".to_string(),
+                None => format!("any{or_null}"),
             },
         };
 
@@ -112,12 +115,12 @@ impl Def for Array {
             let fixed = self.max_items.map(|v| v == min).unwrap_or(false);
             let t = (0..min).map(|_| xv.as_str()).collect::<Vec<_>>().join(",");
             if fixed {
-                return format!("([{t}])");
+                return format!("(([{t}]){or_null})");
             }
-            return format!("([{t}, ...({xv}[])])");
+            return format!("(([{t}, ...({xv}[])]){or_null})");
         }
 
-        format!("({xv}[])")
+        format!("(({xv}[]){or_null})")
     }
     fn is_user_defined(&self) -> bool {
         if let Some(desc) = &self.description {
