@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase", untagged)]
 pub enum SchemaFormat {
     /// Use to define additional detail about the value.
@@ -10,7 +10,7 @@ pub enum SchemaFormat {
     Custom(String),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum KnownFormat {
     /// 8 bit integer.

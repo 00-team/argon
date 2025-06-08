@@ -1,7 +1,7 @@
 use super::common::*;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum ArrayItems {
     R(Box<RefOr<OaSchema>>),
@@ -49,7 +49,7 @@ mod array_items_false {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Array {
     #[serde(rename = "type")]

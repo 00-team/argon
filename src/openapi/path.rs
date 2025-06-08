@@ -34,7 +34,7 @@ pub struct Parameter {
     pub schema: Option<RefOr<OaSchema>>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum ParameterIn {
     Query,
@@ -61,9 +61,9 @@ pub struct Operation {
 impl Operation {
     pub fn def_ts<'a, F: GetRef<'a>>(
         &self, url: &str, method: &str, get_ref: &F,
-        has_name: &impl Fn(&str) -> bool,
+        _has_name: &impl Fn(&str) -> bool,
     ) -> (String, String) {
-        let name = self.url_to_name(url, method, get_ref, has_name);
+        let name = self.url_to_name(url, method, self.is_list(get_ref));
         macro_rules! deopt {
             ($name:ident) => {
                 match &self.$name {
@@ -277,11 +277,9 @@ impl Operation {
         true
     }
 
-    fn url_to_name<'a, F: GetRef<'a>>(
-        &self, url: &str, method: &str, get_ref: &F,
-        _has_name: &impl Fn(&str) -> bool,
+    pub fn url_to_name(
+        &self, url: &str, method: &str, is_list: bool,
     ) -> String {
-        let is_list = self.is_list(get_ref);
         let mut name = String::with_capacity(url.len() + method.len() + 10);
         let mut pu = false;
         let mut skip = false;

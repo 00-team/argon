@@ -20,7 +20,7 @@ pub trait Def {
     fn is_user_defined(&self) -> bool;
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Ref {
     #[serde(rename = "$ref")]
     pub loc: String,
@@ -30,7 +30,7 @@ pub struct Ref {
     pub summary: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged, rename_all = "camelCase")]
 pub enum OaSchema {
     Array(Array),
@@ -62,7 +62,7 @@ impl Def for OaSchema {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum SchemaType {
     Type(Type),
@@ -76,7 +76,7 @@ impl Default for SchemaType {
     }
 }
 
-#[derive(Debug, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Default, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
     #[default]
@@ -89,7 +89,7 @@ pub enum Type {
     Null,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum RefOr<T> {
     Ref(Ref),

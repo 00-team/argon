@@ -1,7 +1,7 @@
 use super::common::*;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct OneOf {
     #[serde(rename = "oneOf")]
     pub items: Vec<RefOr<OaSchema>>,
@@ -47,7 +47,7 @@ impl Def for OneOf {
 //     pub description: Option<String>,
 // }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct AllOf {
     #[serde(rename = "allOf")]
     pub items: Vec<RefOr<OaSchema>>,

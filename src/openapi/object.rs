@@ -8,7 +8,7 @@ use super::{
     format::{KnownFormat, SchemaFormat},
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Number {
     /// Signed integer e.g. `1` or `-2`
@@ -19,7 +19,7 @@ pub enum Number {
     Float(f64),
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
     #[serde(rename = "type")]
