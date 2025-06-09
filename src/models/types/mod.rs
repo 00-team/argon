@@ -2,21 +2,33 @@ mod def;
 mod parse;
 
 #[derive(Debug, Clone)]
-pub enum ApiKind {
-    Unknown,
+pub enum ApiPrim {
     Str,
     Int,
+    Float,
     Bool,
     File,
     Null,
+    Option(Box<ApiType>),
+}
+
+pub type ApiObject = Vec<(String, ApiType)>;
+pub type ApiUnion = Vec<ApiType>;
+
+#[derive(Debug, Clone)]
+pub enum ApiKind {
+    Unknown,
     Recursive,
+    Ref(String),
+    Prim(ApiPrim),
+
     Array(Box<ApiType>),
-    Object(Vec<(String, ApiType)>),
+    Object(ApiObject),
     /// for example in `typescript`:
     /// ```typescript
     /// type Union = number | string
     /// ```
-    Union(Vec<ApiType>),
+    Union(ApiUnion),
     /// for example in `typescript`:
     /// ```typescript
     /// type Combo = { a: string } & { b: number }
@@ -38,31 +50,24 @@ pub enum ApiKind {
 pub struct ApiType {
     pub name: Option<String>,
     pub kind: ApiKind,
-    pub user_defined: bool,
 }
 
 impl ApiType {
-    pub const NULL: Self = Self::new(ApiKind::Null);
-    pub const RECURSIVE: Self = Self::new(ApiKind::Recursive);
-
-    pub const fn new(kind: ApiKind) -> Self {
-        Self { name: None, kind, user_defined: false }
+    pub const fn new(name: Option<String>, kind: ApiKind) -> Self {
+        Self { name, kind }
     }
 
-    pub fn name(mut self, name: String) -> Self {
-        self.name = Some(name);
-        self
+    pub const fn is_prim(&self) -> bool {
+        matches!(self.kind, ApiKind::Prim(_))
     }
 
-    pub fn is_nullable(&self) -> bool {
-        if let ApiKind::Tuple(tup) = &self.kind {
-            for at in tup {
-                if matches!(at.kind, ApiKind::Null) {
-                    return true;
-                }
-            }
-        }
+    pub const fn is_null(&self) -> bool {
+        matches!(self.kind, ApiKind::Prim(ApiPrim::Null))
+    }
+}
 
-        false
+impl From<ApiPrim> for ApiKind {
+    fn from(value: ApiPrim) -> Self {
+        Self::Prim(value)
     }
 }

@@ -19,15 +19,6 @@ impl ApiRoute {
         schemas: &HashMap<String, RefOr<OaSchema>>,
         // routes: &HashMap<String, ApiRoute>,
     ) -> Self {
-        // op.responses;
-        // op.request_body;
-        // op.operation_id;
-        // op.parameters;
-        // op.description;
-        // op.deprecated;
-        // op.summary;
-        // op.tags;
-
         let res = match op.responses.get("200") {
             Some(RefOr::T(t)) => Some(t),
             _ => None,
@@ -40,6 +31,7 @@ impl ApiRoute {
             let Some(ty) = &rb.api_type else { break 'a false };
             matches!(ty.kind, ApiKind::Array(_))
         };
+        let name = op.url_to_name(url, method, is_list);
 
         let mut params = Vec::with_capacity(10);
         if let Some(prs) = &op.parameters {
@@ -70,7 +62,7 @@ impl ApiRoute {
                 schemas,
             ),
             url: url.to_string(),
-            name: op.url_to_name(url, method, is_list),
+            name,
             params,
             method: method.to_string(),
             response_body: rb,

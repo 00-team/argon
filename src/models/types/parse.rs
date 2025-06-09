@@ -8,12 +8,11 @@ use std::collections::{HashMap, HashSet};
 
 impl ApiType {
     pub fn parse_openapi(
-        name: Option<String>, value: &RefOr<OaSchema>,
-        mut parents: HashSet<String>, types: &mut HashMap<String, ApiType>,
+        name: Option<String>, value: &RefOr<OaSchema>, mut parents: HashSet<String>,
+        types: &mut HashMap<String, ApiType>,
         schemas: &HashMap<String, RefOr<OaSchema>>,
     ) -> Self {
-        let mut aty = Self::new(ApiKind::Unknown);
-        aty.name = name.clone();
+        let mut aty = Self::new(name.clone(), ApiKind::Unknown);
 
         let schema = match value {
             RefOr::T(s) => s,
@@ -23,7 +22,7 @@ impl ApiType {
                     return aty.clone();
                 }
                 if parents.contains(i) {
-                    return ApiType::RECURSIVE.name(i.to_string());
+                    return ApiType::new(Some(i.to_string()), ApiKind::Recursive);
                 }
                 let Some(s) = schemas.get(i) else {
                     panic!("ref not found: {i}");
@@ -41,7 +40,7 @@ impl ApiType {
             }
         };
 
-        aty.user_defined = schema.is_user_defined();
+        assert!(!schema.is_user_defined());
 
         match schema {
             OaSchema::Object(o) => {
@@ -86,7 +85,7 @@ impl ApiType {
                         if let Some(fmt) = &o.format {
                             if let SchemaFormat::KnownFormat(kf) = fmt {
                                 if matches!(kf, KnownFormat::Binary) {
-                                    break 'str ApiKind::File;
+                                    break 'str ApiPrim::File.into();
                                 }
                                 panic!("unknown str format: {kf:?}");
                             } else {
@@ -94,18 +93,19 @@ impl ApiType {
                             }
                         }
 
-                        ApiKind::Str
+                        ApiPrim::Str.into()
                     }
-                    Type::Null => ApiKind::Null,
-                    Type::Boolean => ApiKind::Bool,
-                    Type::Integer => ApiKind::Int,
-                    Type::Number => ApiKind::Int,
+                    Type::Null => ApiPrim::Null.into(),
+                    Type::Boolean => ApiPrim::Bool.into(),
+                    Type::Integer => ApiPrim::Int.into(),
+                    Type::Number => ApiPrim::Float.into(),
                     _ => panic!("unknown oty: {oty:?}"),
                 };
 
                 if nullable {
-                    let ak = ApiType::new(kind);
-                    aty.kind = ApiKind::Union(vec![ak, ApiType::NULL]);
+                    let ak = ApiType::new(None, kind);
+                    // aty.kind = ApiKind::Option(Box::new(ak));
+                    aty.kind = ApiPrim::Option(Box::new(ak)).into();
                 } else {
                     aty.kind = kind;
                 }
@@ -141,7 +141,36 @@ impl ApiType {
                         schemas,
                     ));
                 }
-                aty.kind = ApiKind::Union(uni);
+
+
+                if uni.len() == 1 {
+                    return uni[0].clone();
+                    // panic!("wtf: {uni:#?}");
+                }
+
+                let mut updated = false;
+                if uni.len() == 2 {
+                    let mut other: Option<ApiType> = None;
+                    let mut is_option = false;
+                    for x in &uni {
+                        if x.is_null() {
+                            is_option = true
+                        } else {
+                            other = Some(x.clone());
+                        }
+                    }
+
+                    if other.is_some() && is_option {
+                        aty.kind = ApiKind::Prim(ApiPrim::Option(Box::new(
+                            other.unwrap(),
+                        )));
+                        updated = true;
+                    }
+                }
+
+                if !updated {
+                    aty.kind = ApiKind::Union(uni);
+                }
             }
             OaSchema::Array(a) => {
                 let ArrayItems::R(item) = &a.items else {
@@ -164,8 +193,13 @@ impl ApiType {
                     return aty;
                 };
 
-                let item =
-                    ApiType::parse_openapi(None, item, parents, types, schemas);
+                let item = ApiType::parse_openapi(
+                    None,
+                    item,
+                    parents,
+                    types,
+                    schemas,
+                );
 
                 // if a.max_items == a.min_items && a.max_items.is_some() {
                 //     let len = a.max_items.unwrap();
