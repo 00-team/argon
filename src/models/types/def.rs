@@ -74,7 +74,7 @@ impl ApiType {
                     let name = self.name.as_ref().unwrap();
                     let snake = pascal_to_snake(name);
                     let cname = snake.to_uppercase();
-                    out.push_str("const ");
+                    out.push_str("export const ");
                     out.push_str(&cname);
                     out.push_str(" = [");
                     for se in e.iter() {
