@@ -29,7 +29,7 @@ impl ApiRoute {
         // let mut bloom_names = Vec::with_capacity(10);
 
         if !self.params.is_empty() {
-            let mut pi = String::with_capacity(512);
+            // let mut pi = String::with_capacity(512);
             // pi.push_str("params: {");
 
             for p in self.params.iter() {

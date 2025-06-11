@@ -34,8 +34,24 @@ impl ApiPrim {
     }
 }
 
+pub fn pascal_to_snake(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() * 2);
+    for (i, ch) in value.chars().enumerate() {
+        if ch.is_uppercase() && i != 0 {
+            out.push('_');
+        }
+        out.push(ch);
+    }
+
+    if let Some(out) = out.strip_suffix('_') {
+        out.to_string()
+    } else {
+        out
+    }
+}
+
 impl ApiType {
-    pub fn body_ts(&self, for_input: bool) -> String {
+    pub fn body_ts(&self, def: bool, for_input: bool) -> String {
         match &self.kind {
             ApiKind::Prim(p) => p.ts(for_input),
             ApiKind::Unknown => panic!("unknown type: {self:?}"),
@@ -52,6 +68,29 @@ impl ApiType {
                         out.push('|');
                     }
                 }
+
+                if def && self.name.is_some() {
+                    out.push_str(";\n");
+                    let name = self.name.as_ref().unwrap();
+                    let snake = pascal_to_snake(name);
+                    let cname = snake.to_uppercase();
+                    out.push_str("const ");
+                    out.push_str(&cname);
+                    out.push_str(" = [");
+                    for se in e.iter() {
+                        out.push('"');
+                        out.push_str(se);
+                        out.push_str(r#"","#);
+                    }
+                    out.push_str("] as const;\n");
+                    let lname = snake.to_lowercase();
+                    out += &formatdoc! {"
+                    export function is_{lname}(value: string): value is {name} {{
+                        return {cname}.includes(value as {name})
+                    }}
+                    "};
+                }
+
                 out
             }
             ApiKind::Array(a) => format!("{}[]", a.ref_or_body_ts(for_input)),
@@ -94,7 +133,7 @@ impl ApiType {
             return n.to_string();
         }
 
-        self.body_ts(for_input)
+        self.body_ts(false, for_input)
     }
 }
 
