@@ -93,7 +93,7 @@ impl ApiType {
 
                 out
             }
-            ApiKind::Array(a) => format!("{}[]", a.ref_or_body_ts(for_input)),
+            ApiKind::Array(a) => format!("({}[])", a.ref_or_body_ts(for_input)),
             ApiKind::Union(u) => u
                 .iter()
                 .map(|v| v.ref_or_body_ts(for_input))
@@ -133,7 +133,7 @@ impl ApiType {
             return n.to_string();
         }
 
-        self.body_ts(false, for_input)
+        format!("({})", self.body_ts(false, for_input))
     }
 }
 
