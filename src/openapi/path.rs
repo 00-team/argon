@@ -294,6 +294,11 @@ impl Operation {
             if skip {
                 continue;
             }
+            if c == '@' {
+                name.push_str("atsign");
+                pu = false;
+                continue;
+            }
             if matches!(c, '/' | '-' | '_' | '.' | '}' | '{') {
                 if pu || i == 0 || i + 1 == cc {
                     continue;

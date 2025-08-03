@@ -33,7 +33,6 @@ impl ApiRoute {
             pi.push_str("params: {");
 
             for p in self.params.iter() {
-                assert!(p.required);
                 bloom_names.push(p.name.as_str());
 
                 if p.param_in.is_query() {
@@ -41,6 +40,9 @@ impl ApiRoute {
                 }
 
                 pi.push_str(&p.name);
+                if !p.required {
+                    pi.push('?');
+                }
                 pi.push(':');
                 pi.push_str(&p.api_type.ref_or_body_ts(true));
                 pi.push(',');
