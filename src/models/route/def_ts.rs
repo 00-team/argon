@@ -174,7 +174,7 @@ impl ApiRoute {
                                 err(): this is ud.Err {{
                                     return !this.ok()
                                 }},
-                            }})
+                            }} as ud.Result<{outy}>)
                         }},
                         ...override
                     }})
