@@ -6,22 +6,22 @@ use super::*;
 
 impl ApiRoute {
     pub fn def_ts(&self) -> String {
-        let (outy, http_out_type) = match &self.response_body {
+        let (outy, fetch_res) = match &self.response_body {
             Some(ab) => match ab.content_type.as_str() {
-                "text/plain" => ("string".to_string(), "type: 'text',"),
+                "text/plain" => ("string".to_string(), "await r.text()"),
                 "application/octet-stream" => {
-                    ("ArrayBuffer".to_string(), "type: 'arraybuffer',")
+                    ("ArrayBuffer".to_string(), "await r.arrayBuffer()")
                 }
                 "application/json" => {
                     let Some(ty) = &ab.api_type else {
                         panic!("json response body is none: {self:#?}");
                     };
 
-                    (ty.ref_or_body_ts(false), "type: 'json',")
+                    (ty.ref_or_body_ts(false), "await r.json()")
                 }
                 _ => panic!("unknown response type: {self:#?}"),
             },
-            None => ("void".to_string(), ""),
+            None => ("void".to_string(), "void 0 as void"),
         };
 
         let mut input = Vec::<String>::with_capacity(10);
@@ -154,31 +154,25 @@ impl ApiRoute {
             export async function {} ({input}) : Promise<ud.Result<{outy}>> {{
                 {params_bloom}
                 {body}
-                return new Promise((resolve, reject) => {{
-                    ud.httpx({{
-                        url: `{ts_url}`,
-                        method: '{method_upper}',
-                        params: {{ {query_params} }},
-                        {http_out_type}
-                        headers: {{ {headers} }},
-                        data,
-                        reject,
-                        onLoad(x) {{
-                            resolve({{
-                                x,
-                                status: x.status,
-                                body: x.response,
-                                ok(): this is ud.Ok<{outy}> {{
-                                    return this.status == 200
-                                }},
-                                err(): this is ud.Err {{
-                                    return !this.ok()
-                                }},
-                            }} as ud.Result<{outy}>)
-                        }},
-                        ...override
-                    }})
+                let r = await ud.httpx({{
+                    url: `{ts_url}`,
+                    method: '{method_upper}',
+                    params: {{ {query_params} }},
+                    headers: {{ {headers} }},
+                    data, ...override
                 }})
+
+                return {{
+                    r: r.clone(),
+                    status: r.status,
+                    body: {fetch_res},
+                    ok(): this is ud.Ok<{outy}> {{
+                        return this.status == 200
+                    }},
+                    err(): this is ud.Err {{
+                        return !this.ok()
+                    }},
+                }} as ud.Result<{outy}>
 
             }}
         "#,
