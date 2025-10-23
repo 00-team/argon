@@ -12,7 +12,7 @@ pub enum ApiPrim {
     Option(Box<ApiType>),
 }
 
-pub type ApiObject = Vec<(String, ApiType)>;
+pub type ApiObject = Vec<(String, ApiType, bool)>;
 pub type ApiUnion = Vec<ApiType>;
 
 #[derive(Debug, Clone)]

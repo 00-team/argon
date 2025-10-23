@@ -106,8 +106,11 @@ impl ApiType {
                 .join("&"),
             ApiKind::Object(o) => {
                 let mut inner = String::with_capacity(1024);
-                for (p, v) in o {
+                for (p, v, rq) in o {
                     inner.push_str(p);
+                    if !rq {
+                        inner.push('?');
+                    }
                     inner.push(':');
                     inner.push_str(&v.ref_or_body_ts(for_input));
                     inner.push(',');
@@ -228,7 +231,7 @@ impl ApiType {
             ApiKind::Prim(p) => p.dart(for_input),
             ApiKind::Object(obj) => {
                 let mut inner = String::with_capacity(1024);
-                for (p, v) in obj {
+                for (p, v, _rq) in obj {
                     inner.push_str(&v.ref_or_body_dart(for_input));
                     inner.push(' ');
                     inner.push_str(p);
@@ -251,8 +254,8 @@ impl ApiType {
         // let mut from_json = String::with_capacity(1024);
         // let mut into_json = String::with_capacity(1024);
 
-        let mut find_uk = |obj: &Vec<(String, ApiType)>| {
-            for (n, v) in obj {
+        let mut find_uk = |obj: &ApiObject| {
+            for (n, v, _rq) in obj {
                 if let ApiKind::StrEnum(se) = &v.kind {
                     if se.len() == 1 {
                         if let Some(uk) = ukeys.get_mut(n) {
@@ -289,8 +292,8 @@ impl ApiType {
             let mut inner = String::with_capacity(512);
             let mut var_key = String::new();
 
-            let mut dooj = |obj: &Vec<(String, ApiType)>| {
-                for (k, v) in obj {
+            let mut dooj = |obj: &ApiObject| {
+                for (k, v, _rq) in obj {
                     if k == uk {
                         let ApiKind::StrEnum(se) = &v.kind else {
                             unreachable!()
@@ -343,10 +346,10 @@ impl ApiType {
     }
 
     fn dart_object(name: &str, object: &ApiObject, for_input: bool) -> String {
-        let gg = object.iter().any(|(k, _)| k.starts_with('_'));
+        let gg = object.iter().any(|(k, _t, _rq)| k.starts_with('_'));
         if !gg {
             let mut inner = String::with_capacity(2048);
-            for (p, v) in object {
+            for (p, v, _rq) in object {
                 inner += &format!("{} {p},\n", v.ref_or_body_dart(for_input));
             }
             return format!("typedef {name} = ({{{inner}}});");
@@ -357,7 +360,7 @@ impl ApiType {
         let mut from_json = String::with_capacity(1024);
         let mut into_json = String::with_capacity(1024);
 
-        for (p, v) in object {
+        for (p, v, _rq) in object {
             let pn = p.strip_prefix("_").unwrap_or(p);
             props +=
                 &format!("final {} {pn};\n", v.ref_or_body_dart(for_input));

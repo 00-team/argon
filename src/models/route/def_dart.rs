@@ -103,7 +103,7 @@ impl ApiRoute {
                     //     (matches!(ty.kind, ApiKind::Str | ApiKind::File), false)
                     // }
 
-                    for (name, ty) in obj {
+                    for (name, ty, _rq) in obj {
                         // let (prim, nullable) = is_prim(ty);
                         if let ApiKind::Prim(prim) = &ty.kind {
                             if let ApiPrim::Option(_) = prim {

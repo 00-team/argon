@@ -73,6 +73,7 @@ impl ApiType {
                                     types,
                                     schemas,
                                 ),
+                                o.required.contains(kp)
                             ));
                         }
                         ApiKind::Object(obj)
