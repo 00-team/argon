@@ -160,7 +160,7 @@ impl ApiRoute {
                     url: `{ts_url}`,
                     method: '{method_upper}',
                     params: {{ {query_params} }},
-                    headers: {{ {headers}, ...ovh }},
+                    headers: {{ {headers} ...ovh }},
                     data,
                     ...override
                 }})
