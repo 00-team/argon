@@ -129,9 +129,9 @@ impl ApiType {
 
     pub fn ref_or_body_ts(&self, for_input: bool) -> String {
         if let Some(n) = &self.name {
-            if !for_input && n == "Gene" {
-                return "(Gene | null)".to_string();
-            }
+            // if !for_input && n == "Gene" {
+            //     return "(Gene | null)".to_string();
+            // }
             return n.to_string();
         }
 
