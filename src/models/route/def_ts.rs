@@ -154,12 +154,15 @@ impl ApiRoute {
             export async function {} ({input}) : Promise<ud.Result<{outy}>> {{
                 {params_bloom}
                 {body}
+                let ovh = override.headers || {{}};
+                delete override.headers;
                 let r = await ud.httpx({{
                     url: `{ts_url}`,
                     method: '{method_upper}',
                     params: {{ {query_params} }},
-                    headers: {{ {headers} }},
-                    data, ...override
+                    headers: {{ {headers}, ...ovh }},
+                    data,
+                    ...override
                 }})
 
                 return {{
