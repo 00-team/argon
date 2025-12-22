@@ -4,13 +4,14 @@ use crate::openapi::{
     common::{Def, OaSchema, RefOr, SchemaType, Type},
     format::{KnownFormat, SchemaFormat},
 };
-use std::collections::{HashMap, HashSet};
+use indexmap::IndexMap;
+use std::collections::HashSet;
 
 impl ApiType {
     pub fn parse_openapi(
         name: Option<String>, value: &RefOr<OaSchema>,
-        mut parents: HashSet<String>, types: &mut HashMap<String, ApiType>,
-        schemas: &HashMap<String, RefOr<OaSchema>>,
+        mut parents: HashSet<String>, types: &mut IndexMap<String, ApiType>,
+        schemas: &IndexMap<String, RefOr<OaSchema>>,
     ) -> Self {
         let mut aty = Self::new(name.clone(), ApiKind::Unknown);
 
@@ -73,7 +74,7 @@ impl ApiType {
                                     types,
                                     schemas,
                                 ),
-                                o.required.contains(kp)
+                                o.required.contains(kp),
                             ));
                         }
                         ApiKind::Object(obj)

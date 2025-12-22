@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use indexmap::IndexMap;
 use indoc::formatdoc;
 
 use super::*;
@@ -249,7 +248,7 @@ impl ApiType {
     fn dart_union(
         name: &str, uni: &ApiUnion, for_input: bool, added: &ApiObject,
     ) -> String {
-        let mut ukeys = HashMap::<String, usize>::with_capacity(2);
+        let mut ukeys = IndexMap::<String, usize>::with_capacity(2);
         // let mut init = String::with_capacity(1024);
         // let mut from_json = String::with_capacity(1024);
         // let mut into_json = String::with_capacity(1024);

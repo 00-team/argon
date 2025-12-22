@@ -7,18 +7,16 @@ pub mod object;
 pub mod of;
 pub mod path;
 
+use indexmap::IndexMap;
 use indoc::formatdoc;
 use serde::Deserialize;
-use std::{
-    collections::{HashMap, HashSet},
-    io::Write,
-};
+use std::{collections::HashSet, io::Write};
 
 use self::common::{Def, Ref, RefOr};
 
 #[derive(Debug, Deserialize)]
 pub struct OpenApi {
-    pub paths: HashMap<String, path::PathItem>,
+    pub paths: IndexMap<String, path::PathItem>,
     pub components: OaComponents,
     pub info: OaInfo,
 }
@@ -30,7 +28,7 @@ pub struct OaInfo {
 
 #[derive(Debug, Deserialize)]
 pub struct OaComponents {
-    pub schemas: HashMap<String, common::RefOr<common::OaSchema>>,
+    pub schemas: IndexMap<String, common::RefOr<common::OaSchema>>,
 }
 
 pub fn generate(oa: &OpenApi) -> std::io::Result<()> {

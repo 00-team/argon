@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::{
     models::types::ApiKind,
@@ -12,12 +12,9 @@ use super::*;
 
 impl ApiRoute {
     pub fn parse_openapi(
-        url: &str,
-        method: &str,
-        op: &Operation,
-        types: &mut HashMap<String, ApiType>,
-        schemas: &HashMap<String, RefOr<OaSchema>>,
-        // routes: &HashMap<String, ApiRoute>,
+        url: &str, method: &str, op: &Operation,
+        types: &mut IndexMap<String, ApiType>,
+        schemas: &IndexMap<String, RefOr<OaSchema>>,
     ) -> Self {
         let res = match op.responses.get("200") {
             Some(RefOr::T(t)) => Some(t),
@@ -79,8 +76,8 @@ impl ApiRoute {
 
 impl ApiRequstBody {
     pub fn parse_openapi(
-        rb: &Option<RequestBody>, types: &mut HashMap<String, ApiType>,
-        schemas: &HashMap<String, RefOr<OaSchema>>,
+        rb: &Option<RequestBody>, types: &mut IndexMap<String, ApiType>,
+        schemas: &IndexMap<String, RefOr<OaSchema>>,
     ) -> Option<Self> {
         let Some(rb) = rb else { return None };
         assert!(rb.required.unwrap_or_default());
@@ -104,8 +101,8 @@ impl ApiRequstBody {
 
 impl ApiResponseBody {
     pub fn parse_openapi(
-        res: Option<&Response>, types: &mut HashMap<String, ApiType>,
-        schemas: &HashMap<String, RefOr<OaSchema>>,
+        res: Option<&Response>, types: &mut IndexMap<String, ApiType>,
+        schemas: &IndexMap<String, RefOr<OaSchema>>,
     ) -> Option<Self> {
         let Some(r) = res else { return None };
         if r.content.is_empty() {

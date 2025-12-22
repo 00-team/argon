@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 
+use indexmap::IndexMap;
 use indoc::formatdoc;
 use route::ApiRoute;
 use types::ApiType;
 
 use crate::openapi::OpenApi;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::io::Write;
 
 mod route;
@@ -13,8 +14,8 @@ mod types;
 
 #[derive(Debug)]
 pub struct ApiSchema {
-    types: HashMap<String, ApiType>,
-    route: HashMap<String, ApiRoute>,
+    types: IndexMap<String, ApiType>,
+    route: IndexMap<String, ApiRoute>,
     api_version: String,
 }
 
@@ -22,8 +23,8 @@ impl ApiSchema {
     pub fn from_openapi(oa: &OpenApi) -> Self {
         let len = oa.components.schemas.len() + oa.paths.len() * 2;
         let mut aps = Self {
-            types: HashMap::with_capacity(len),
-            route: HashMap::with_capacity(oa.paths.len()),
+            types: IndexMap::with_capacity(len),
+            route: IndexMap::with_capacity(oa.paths.len()),
             api_version: oa.info.version.clone(),
         };
 

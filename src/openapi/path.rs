@@ -3,7 +3,7 @@ use crate::openapi::common::Def;
 use core::panic;
 use indoc::formatdoc;
 use serde::Deserialize;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -53,7 +53,7 @@ pub struct Operation {
     pub operation_id: Option<String>,
     pub parameters: Option<Vec<Parameter>>,
     pub request_body: Option<RequestBody>,
-    pub responses: HashMap<String, RefOr<Response>>,
+    pub responses: IndexMap<String, RefOr<Response>>,
     pub deprecated: Option<bool>,
     // pub security: Option<Vec<SecurityRequirement>>,
 }
@@ -332,9 +332,9 @@ pub struct Response {
     pub description: String,
     /// Map of headers identified by their name. `Content-Type` header will be ignored.
     #[serde(default)]
-    pub headers: HashMap<String, Header>,
+    pub headers: IndexMap<String, Header>,
     #[serde(default)]
-    pub content: HashMap<String, Content>,
+    pub content: IndexMap<String, Content>,
     // #[serde(default)]
     // pub links: BTreeMap<String, RefOr<Link>>,
 }
@@ -354,7 +354,7 @@ pub struct Content {
 #[serde(rename_all = "camelCase")]
 pub struct RequestBody {
     pub description: Option<String>,
-    pub content: HashMap<String, Content>,
+    pub content: IndexMap<String, Content>,
     pub required: Option<bool>,
 }
 

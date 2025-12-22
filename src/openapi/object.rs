@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use serde::Deserialize;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use super::{
     common::*,
@@ -32,7 +32,7 @@ pub struct Object {
     #[serde(default)]
     pub required: Vec<String>,
     #[serde(default)]
-    pub properties: HashMap<String, RefOr<OaSchema>>,
+    pub properties: IndexMap<String, RefOr<OaSchema>>,
 
     /// Additional [`Schema`] for non specified fields (Useful for typed maps).
     // pub additional_properties: Option<Box<AdditionalProperties<Schema>>>,
