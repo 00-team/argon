@@ -103,6 +103,9 @@ impl ApiType {
                 .map(|v| v.ref_or_body_ts(for_input))
                 .collect::<Vec<_>>()
                 .join("&"),
+            ApiKind::Map(val) => {
+                format!("Record<string, {}>", val.ref_or_body_ts(for_input))
+            }
             ApiKind::Object(o) => {
                 let mut inner = String::with_capacity(1024);
                 for (p, v, rq) in o {
@@ -160,6 +163,7 @@ impl ApiType {
             ApiKind::Prim(p) => {
                 format!("typedef {name} = {};\n", p.dart(for_input))
             }
+            ApiKind::Map(_) => format!("idk yet"),
             ApiKind::StrEnum(se) => {
                 let mut eel = String::with_capacity(512);
                 let mut een = String::with_capacity(512);

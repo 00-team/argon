@@ -3,6 +3,7 @@ use crate::openapi::{
     array::ArrayItems,
     common::{Def, OaSchema, RefOr, SchemaType, Type},
     format::{KnownFormat, SchemaFormat},
+    object::AdditionalProperties,
 };
 use indexmap::IndexMap;
 use std::collections::HashSet;
@@ -61,7 +62,21 @@ impl ApiType {
                 };
 
                 let kind = match oty {
-                    Type::Object => {
+                    Type::Object => 'k: {
+                        if let Some(ap) = &o.additional_properties {
+                            let r = match &**ap {
+                                AdditionalProperties::RefOr(r) => r,
+                                AdditionalProperties::FreeForm(_) => {
+                                    panic!("free form map")
+                                }
+                            };
+                            break 'k ApiKind::Map(Box::new(
+                                ApiType::parse_openapi(
+                                    None, r, parents, types, schemas,
+                                ),
+                            ));
+                        }
+
                         let cap = o.properties.len();
                         let mut obj = Vec::with_capacity(cap);
                         for (kp, vp) in o.properties.iter() {

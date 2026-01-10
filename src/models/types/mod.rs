@@ -26,6 +26,14 @@ pub enum ApiKind {
     Object(ApiObject),
     /// for example in `typescript`:
     /// ```typescript
+    /// type Map = {
+    ///     [k: string]: string | number | {obj: boolean}
+    /// }
+    /// type Map2 = Record<string, string | number | any>
+    /// ```
+    Map(Box<ApiType>),
+    /// for example in `typescript`:
+    /// ```typescript
     /// type Union = number | string
     /// ```
     Union(ApiUnion),

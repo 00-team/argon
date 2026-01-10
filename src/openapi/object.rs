@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use serde::Deserialize;
 use indexmap::IndexMap;
+use serde::Deserialize;
 
 use super::{
     common::*,
@@ -17,6 +17,15 @@ pub enum Number {
     UInt(usize),
     /// Floating point number e.g. `1.34`
     Float(f64),
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum AdditionalProperties<T> {
+    /// Use when value type of the map is a known [`Schema`] or [`Ref`] to the [`Schema`].
+    RefOr(RefOr<T>),
+    /// Use _`AdditionalProperties::FreeForm(true)`_ when any value is allowed in the map.
+    FreeForm(bool),
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -35,11 +44,11 @@ pub struct Object {
     pub properties: IndexMap<String, RefOr<OaSchema>>,
 
     /// Additional [`Schema`] for non specified fields (Useful for typed maps).
-    // pub additional_properties: Option<Box<AdditionalProperties<Schema>>>,
+    pub additional_properties: Option<Box<AdditionalProperties<OaSchema>>>,
 
     /// Additional [`Schema`] to describe property names of an object such as a map. See more
     /// details <https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-01#name-propertynames>
-    // pub property_names: Option<Box<Schema>>,
+    pub property_names: Option<Box<OaSchema>>,
     pub deprecated: Option<bool>,
 
     // pub examples: Vec<serde_json::Value>,
