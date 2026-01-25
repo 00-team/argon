@@ -104,7 +104,7 @@ impl ApiType {
                 .collect::<Vec<_>>()
                 .join("&"),
             ApiKind::Map(val) => {
-                format!("Record<string, {}>", val.ref_or_body_ts(for_input))
+                format!("_Map<{}>", val.ref_or_body_ts(for_input))
             }
             ApiKind::Object(o) => {
                 let mut inner = String::with_capacity(1024);
