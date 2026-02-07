@@ -84,6 +84,7 @@ impl ApiSchema {
                 import * as ud from './user_defined';
                 export const API_VERSION = '{}';
                 
+                // @ts-ignore
                 type _Map<V> = {{ [key: string]: V }}
                 
             ", self.api_version}
