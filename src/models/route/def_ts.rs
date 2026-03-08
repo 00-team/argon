@@ -119,6 +119,15 @@ impl ApiRoute {
                             continue;
                         }
 
+                        if let ApiKind::Array(arr) = &ty.kind
+                            && let ApiKind::Prim(prim) = &arr.kind
+                            && let ApiPrim::File = prim
+                        {
+                            body += &format!("body.{name}.forEach(f => data.append('{name}', f))");
+                            // body.push_str("data.append");
+                            continue;
+                        }
+
                         body.push_str(&formatdoc! {"
                             data.set(
                                 '{name}',
