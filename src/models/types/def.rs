@@ -42,11 +42,7 @@ pub fn pascal_to_snake(value: &str) -> String {
         out.push(ch);
     }
 
-    if let Some(out) = out.strip_suffix('_') {
-        out.to_string()
-    } else {
-        out
-    }
+    if let Some(out) = out.strip_suffix('_') { out.to_string() } else { out }
 }
 
 impl ApiType {
@@ -245,6 +241,16 @@ impl ApiType {
             ApiKind::Array(at) => {
                 format!("List<{}>", at.ref_or_body_dart(for_input))
             }
+            ApiKind::Tuple(tp) => {
+                let mut inner = String::with_capacity(1024);
+                inner.push('(');
+                for at in tp {
+                    inner.push_str(&at.ref_or_body_dart(for_input));
+                    inner.push(',');
+                }
+                inner.push(')');
+                inner
+            }
             _ => unreachable!("{self:#?}"),
         }
     }
@@ -334,7 +340,9 @@ impl ApiType {
                     "const factory {name}.{var_key}() = {name}{var_key};\n"
                 );
             } else {
-                vars += &format!("const factory {name}.{var_key}({{{inner}}}) = {name}{var_key};\n");
+                vars += &format!(
+                    "const factory {name}.{var_key}({{{inner}}}) = {name}{var_key};\n"
+                );
             }
         }
 
@@ -349,42 +357,63 @@ impl ApiType {
     }
 
     fn dart_object(name: &str, object: &ApiObject, for_input: bool) -> String {
-        let gg = object.iter().any(|(k, _t, _rq)| k.starts_with('_'));
-        if !gg {
-            let mut inner = String::with_capacity(2048);
+        let not_jcomp = object.iter().any(|(_, ty, _)| ty.is_file());
+
+        // let gg = object.iter().any(|(k, _t, _rq)| k.starts_with('_'));
+        if not_jcomp {
+            let mut fields = String::with_capacity(2048);
             for (p, v, _rq) in object {
-                inner += &format!("{} {p},\n", v.ref_or_body_dart(for_input));
+                let ty = v.ref_or_body_dart(for_input);
+                fields += &format!("    {ty} {p},\n");
             }
-            return format!("typedef {name} = ({{{inner}}});");
+            return format!("typedef {name} = ({{\n{fields}}});");
         }
 
-        let mut props = String::with_capacity(1024);
+        // let mut props = String::with_capacity(1024);
         let mut init = String::with_capacity(1024);
-        let mut from_json = String::with_capacity(1024);
-        let mut into_json = String::with_capacity(1024);
+        // let mut from_json = String::with_capacity(1024);
+        // let mut into_json = String::with_capacity(1024);
+        let tab3 = "            ";
+        let tab2 = "        ";
+
+        if name == "DishSetPhoto" {
+            println!("{object:#?}");
+        }
 
         for (p, v, _rq) in object {
+            let ty = v.ref_or_body_dart(for_input);
             let pn = p.strip_prefix("_").unwrap_or(p);
-            props +=
-                &format!("final {} {pn};\n", v.ref_or_body_dart(for_input));
-            init += &format!("required this.{pn},");
-            from_json += &format!("{pn}: json['{p}'],\n");
-            into_json += &format!("'{p}': {pn},");
+            // props.push_str("    final ");
+            // props += &format!("{ty} {pn};\n");
+            init.push_str(tab2);
+            if !v.is_option() {
+                init.push_str("required ");
+            }
+            init += &format!("{ty} {pn},\n");
+            // from_json.push_str(tab3);
+            // if v.has_from_json() {
+            //     from_json += &format!("{pn}: {ty}.fromJson(json['{p}']),\n");
+            // } else {
+            //     from_json += &format!("{pn}: json['{p}'],\n");
+            // }
+            // into_json.push_str(tab2);
+            // into_json += &format!("'{p}': {pn},\n");
         }
         formatdoc! {"
-            class {name} {{
-                {props}
+            @Freezed()
+            class {name} with _${name} {{
+                const factory {name}({{\n{init}    }}) = _{name};
 
-                {name}({{ {init} }});
-
-                factory {name}.fromJson(JsonObject json) {{
-                    return {name}({from_json});
-                }}
-
-                JsonObject toJson() => {{
-                    {into_json}
-                }};
+                factory {name}.fromJson(JsonObject json) => _${name}FromJson(json);
             }}
         "}
+
+        // {name}({{\n{init}    }});
+        //
+        // factory {name}.fromJson(JsonObject json) {{
+        //     return {name}(\n{from_json}{tab2});
+        // }}
+        //
+        // JsonObject toJson() => {{\n{into_json}    }};
     }
 }
