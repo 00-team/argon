@@ -106,6 +106,7 @@ impl ApiRoute {
                     for (name, ty, _rq) in obj {
                         // let (prim, nullable) = is_prim(ty);
                         if let ApiKind::Prim(prim) = &ty.kind {
+                            body.push_str("    ");
                             if let ApiPrim::Option(_) = prim {
                                 body.push_str("body.");
                                 body.push_str(name);
@@ -123,7 +124,7 @@ impl ApiRoute {
                             && let ApiKind::Prim(prim) = &arr.kind
                             && let ApiPrim::File = prim
                         {
-                            body += &format!("body.{name}.forEach(f => data.append('{name}', f))");
+                            body += &format!("    body.{name}.forEach(f => data.append('{name}', f));\n");
                             // body.push_str("data.append");
                             continue;
                         }
