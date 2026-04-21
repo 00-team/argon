@@ -68,16 +68,16 @@ impl Def for AllOf {
     }
 
     fn is_user_defined(&self) -> bool {
-        if let Some(s) = &self.description {
-            if s.contains("#user_defined") {
-                return true;
-            }
+        if let Some(s) = &self.description
+            && s.contains("#user_defined")
+        {
+            return true;
         }
 
-        if let Some(s) = &self.title {
-            if s.contains("#user_defined") {
-                return true;
-            }
+        if let Some(s) = &self.title
+            && s.contains("#user_defined")
+        {
+            return true;
         }
 
         false

@@ -1,9 +1,9 @@
 use super::common::{GetRef, OaSchema, RefOr};
 use crate::openapi::common::Def;
 use core::panic;
+use indexmap::IndexMap;
 use indoc::formatdoc;
 use serde::Deserialize;
-use indexmap::IndexMap;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -89,8 +89,8 @@ impl Operation {
                     query_params.push(&p.name);
                 }
                 if !p.required {
-                    assert!(false);
-                    def.push('?');
+                    unreachable!()
+                    // def.push('?');
                 }
                 def.push(':');
                 let Some(s) = &p.schema else {
@@ -100,7 +100,7 @@ impl Operation {
 
                 let ty = match s {
                     RefOr::T(t) => t.def_ts(get_ref),
-                    RefOr::Ref(r) => match get_ref(&r) {
+                    RefOr::Ref(r) => match get_ref(r) {
                         Some((i, _)) => i,
                         None => "any".to_string(),
                     },
@@ -383,10 +383,10 @@ impl Def for RequestBody {
     }
 
     fn is_user_defined(&self) -> bool {
-        if let Some(s) = &self.description {
-            if s.contains("#user_defined") {
-                return true;
-            }
+        if let Some(s) = &self.description
+            && s.contains("#user_defined")
+        {
+            return true;
         }
 
         false

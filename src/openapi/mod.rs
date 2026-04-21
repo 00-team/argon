@@ -39,11 +39,8 @@ pub fn generate(oa: &OpenApi) -> std::io::Result<()> {
         .open("argon-data/gen.ts")?;
 
     let get_ref = |loc: &Ref| {
-        let i = loc.loc.split('/').last().unwrap();
-        match oa.components.schemas.get(i) {
-            Some(v) => Some((i.to_string(), v)),
-            None => None,
-        }
+        let i = loc.loc.split('/').next_back().unwrap();
+        oa.components.schemas.get(i).map(|v| (i.to_string(), v))
     };
 
     ts.write_all(

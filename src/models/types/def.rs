@@ -18,6 +18,26 @@ impl ApiPrim {
         }
     }
 
+    pub fn kotlin(&self) -> String {
+        match self {
+            ApiPrim::Null => "null".to_string(),
+            ApiPrim::Str => "String".to_string(),
+            ApiPrim::Int => "Int".to_string(),
+            ApiPrim::Float => "Float".to_string(),
+            ApiPrim::File => "File".to_string(),
+            ApiPrim::Bool => "Boolean".to_string(),
+            ApiPrim::Option(opt) => {
+                if opt.name.is_some() {
+                    return format!("({}?)", opt.kotlin_ref())
+                }
+                match &opt.kind {
+                    ApiKind::Prim(p) => format!("({}?)", p.kotlin()),
+                    _ => panic!("invalid opt")
+                }
+            }
+        }
+    }
+
     pub fn dart(&self, for_input: bool) -> String {
         match self {
             ApiPrim::Null => "null".to_string(),
