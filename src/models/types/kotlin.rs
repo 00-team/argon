@@ -1,9 +1,8 @@
-use crate::models::types::def::snake_to_pascal;
 
 use super::*;
 
 impl ApiType {
-    pub fn body_kotlin(&self, def: bool, for_input: bool) -> String {
+    pub fn body_kotlin(&self, _def: bool, _for_input: bool) -> String {
         match &self.kind {
             // ApiKind::Prim(p) => {
             //     format!(
@@ -39,7 +38,7 @@ impl ApiType {
                 //     a.kotlin_ref()
                 // )
             }
-            ApiKind::Tuple(tp) => {
+            ApiKind::Tuple(_tp) => {
                 // format!("/*\n {tp:#?} \n*/")
                 unreachable!()
             }

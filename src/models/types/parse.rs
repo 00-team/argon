@@ -19,7 +19,7 @@ impl ApiType {
         let schema = match value {
             RefOr::T(s) => s,
             RefOr::Ref(r) => {
-                let i = r.loc.split('/').last().unwrap();
+                let i = r.loc.split('/').next_back().unwrap();
                 if let Some(aty) = types.get(i) {
                     return aty.clone();
                 }

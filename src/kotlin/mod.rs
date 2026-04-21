@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 
 use crate::models::{
     ApiSchema,
-    types::{ApiKind, ApiPrim, ApiType},
+    types::{ApiKind, ApiPrim},
 };
 
 // #[derive(Debug)]
@@ -22,7 +22,7 @@ struct IntermediateApiType {
 
 impl KotlinApi {
     pub fn new(schema: &ApiSchema) -> Self {
-        let mut kapi = Self {
+        let kapi = Self {
             typealias: Vec::with_capacity(schema.types.len()),
             objects: Vec::with_capacity(schema.types.len()),
             str_enums: Vec::with_capacity(schema.types.len()),
@@ -47,11 +47,11 @@ impl KotlinApi {
             );
         }
 
-        for (name, ty) in schema.types.iter() {
+        for (_name, ty) in schema.types.iter() {
             match &ty.kind {
-                ApiKind::Union(u) => {}
-                ApiKind::Combo(c) => {}
-                ApiKind::Object(o) => {}
+                ApiKind::Union(_u) => {}
+                ApiKind::Combo(_c) => {}
+                ApiKind::Object(_o) => {}
                 ApiKind::Prim(p) => {
                     let ApiPrim::Option(o) = p else { continue };
                     let ApiKind::Prim(pp) = &o.kind else { unreachable!() };

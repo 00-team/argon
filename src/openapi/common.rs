@@ -101,7 +101,7 @@ impl<T: Def> Def for RefOr<T> {
         let x = match self {
             Self::T(t) => t.def_ts(get_ref),
             Self::Ref(r) => {
-                let i = r.loc.split('/').last().unwrap();
+                let i = r.loc.split('/').next_back().unwrap();
                 i.to_string()
             }
         };

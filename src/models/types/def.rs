@@ -179,7 +179,7 @@ impl ApiType {
             ApiKind::Prim(p) => {
                 format!("typedef {name} = {};\n", p.dart(for_input))
             }
-            ApiKind::Map(_) => format!("idk yet"),
+            ApiKind::Map(_) => "idk yet".to_string(),
             ApiKind::StrEnum(se) => {
                 let mut eel = String::with_capacity(512);
                 let mut een = String::with_capacity(512);
@@ -285,15 +285,14 @@ impl ApiType {
 
         let mut find_uk = |obj: &ApiObject| {
             for (n, v, _rq) in obj {
-                if let ApiKind::StrEnum(se) = &v.kind {
-                    if se.len() == 1 {
+                if let ApiKind::StrEnum(se) = &v.kind
+                    && se.len() == 1 {
                         if let Some(uk) = ukeys.get_mut(n) {
                             *uk += 1;
                         } else {
                             ukeys.insert(n.to_string(), 1);
                         }
                     }
-                }
             }
         };
 
@@ -393,7 +392,7 @@ impl ApiType {
         let mut init = String::with_capacity(1024);
         // let mut from_json = String::with_capacity(1024);
         // let mut into_json = String::with_capacity(1024);
-        let tab3 = "            ";
+        let _tab3 = "            ";
         let tab2 = "        ";
 
         if name == "DishSetPhoto" {

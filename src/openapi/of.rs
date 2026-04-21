@@ -22,17 +22,15 @@ impl Def for OneOf {
     }
 
     fn is_user_defined(&self) -> bool {
-        if let Some(s) = &self.description {
-            if s.contains("#user_defined") {
+        if let Some(s) = &self.description
+            && s.contains("#user_defined") {
                 return true;
             }
-        }
 
-        if let Some(s) = &self.title {
-            if s.contains("#user_defined") {
+        if let Some(s) = &self.title
+            && s.contains("#user_defined") {
                 return true;
             }
-        }
 
         false
     }

@@ -52,7 +52,9 @@ impl ApiRoute {
             }
         }
 
-        let ar = Self {
+        
+
+        Self {
             request_body: ApiRequstBody::parse_openapi(
                 &op.request_body,
                 types,
@@ -65,12 +67,10 @@ impl ApiRoute {
             response_body: rb,
             doc: format!(
                 "{}\n{}",
-                op.summary.as_ref().map(|v| v.as_str()).unwrap_or_default(),
-                op.description.as_ref().map(|v| v.as_str()).unwrap_or_default(),
+                op.summary.as_deref().unwrap_or_default(),
+                op.description.as_deref().unwrap_or_default(),
             ),
-        };
-
-        ar
+        }
     }
 }
 
