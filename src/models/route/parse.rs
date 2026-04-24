@@ -104,7 +104,7 @@ impl ApiResponseBody {
         res: Option<&Response>, types: &mut IndexMap<String, ApiType>,
         schemas: &IndexMap<String, RefOr<OaSchema>>,
     ) -> Option<Self> {
-        let Some(r) = res else { return None };
+        let r = res?;
         if r.content.is_empty() {
             return None;
         }

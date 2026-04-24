@@ -1,8 +1,7 @@
-mod def;
-mod kotlin;
-mod parse;
+pub mod def;
+pub mod parse;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ApiPrim {
     Str,
     Int,
@@ -16,7 +15,7 @@ pub enum ApiPrim {
 pub type ApiObject = Vec<(String, ApiType, bool)>;
 pub type ApiUnion = Vec<ApiType>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ApiKind {
     Unknown,
     Recursive,
@@ -54,7 +53,7 @@ pub enum ApiKind {
     Tuple(Vec<ApiType>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApiType {
     pub name: Option<String>,
     pub kind: ApiKind,

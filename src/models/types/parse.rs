@@ -180,10 +180,8 @@ impl ApiType {
                         }
                     }
 
-                    if other.is_some() && is_option {
-                        aty.kind = ApiKind::Prim(ApiPrim::Option(Box::new(
-                            other.unwrap(),
-                        )));
+                    if is_option && let Some(ot) = other {
+                        aty.kind = ApiKind::Prim(ApiPrim::Option(Box::new(ot)));
                         updated = true;
                     }
                 }

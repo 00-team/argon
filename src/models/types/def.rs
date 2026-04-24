@@ -18,26 +18,6 @@ impl ApiPrim {
         }
     }
 
-    pub fn kotlin(&self) -> String {
-        match self {
-            ApiPrim::Null => "null".to_string(),
-            ApiPrim::Str => "String".to_string(),
-            ApiPrim::Int => "Int".to_string(),
-            ApiPrim::Float => "Float".to_string(),
-            ApiPrim::File => "File".to_string(),
-            ApiPrim::Bool => "Boolean".to_string(),
-            ApiPrim::Option(opt) => {
-                if opt.name.is_some() {
-                    return format!("({}?)", opt.kotlin_ref())
-                }
-                match &opt.kind {
-                    ApiKind::Prim(p) => format!("({}?)", p.kotlin()),
-                    _ => panic!("invalid opt")
-                }
-            }
-        }
-    }
-
     pub fn dart(&self, for_input: bool) -> String {
         match self {
             ApiPrim::Null => "null".to_string(),
@@ -286,13 +266,14 @@ impl ApiType {
         let mut find_uk = |obj: &ApiObject| {
             for (n, v, _rq) in obj {
                 if let ApiKind::StrEnum(se) = &v.kind
-                    && se.len() == 1 {
-                        if let Some(uk) = ukeys.get_mut(n) {
-                            *uk += 1;
-                        } else {
-                            ukeys.insert(n.to_string(), 1);
-                        }
+                    && se.len() == 1
+                {
+                    if let Some(uk) = ukeys.get_mut(n) {
+                        *uk += 1;
+                    } else {
+                        ukeys.insert(n.to_string(), 1);
                     }
+                }
             }
         };
 

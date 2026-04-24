@@ -14,7 +14,8 @@ fn main() -> std::io::Result<()> {
     let asp = models::ApiSchema::from_openapi(&oa);
     asp.generate()?;
 
-    let _kapi = kotlin::KotlinApi::new(&asp);
+    let kapi = kotlin::KotlinApi::new(&asp);
+    kapi.generate()?;
 
     Ok(())
 }
