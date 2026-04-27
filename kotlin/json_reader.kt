@@ -1,6 +1,6 @@
 
 interface FromJson<T> {
-    abstract fun from_json(json_reader: JsonReader): T?
+    abstract fun from_json(json_reader: JsonReader): T
 }
 
 class JsonParseException(message: String) : Exception(message)

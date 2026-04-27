@@ -25,12 +25,12 @@ pub struct ApiParam {
     pub api_type: ApiType,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum ApiParamIn {
     Path,
     Query,
-    Header,
-    Cookie,
+    // Header,
+    // Cookie,
 }
 
 impl ApiParamIn {
@@ -42,13 +42,13 @@ impl ApiParamIn {
         matches!(self, Self::Path)
     }
 
-    pub fn is_header(&self) -> bool {
-        matches!(self, Self::Header)
-    }
-
-    pub fn is_cookie(&self) -> bool {
-        matches!(self, Self::Cookie)
-    }
+    // pub fn is_header(&self) -> bool {
+    //     matches!(self, Self::Header)
+    // }
+    //
+    // pub fn is_cookie(&self) -> bool {
+    //     matches!(self, Self::Cookie)
+    // }
 }
 
 impl From<ParameterIn> for ApiParamIn {
@@ -56,8 +56,7 @@ impl From<ParameterIn> for ApiParamIn {
         match value {
             ParameterIn::Path => Self::Path,
             ParameterIn::Query => Self::Query,
-            ParameterIn::Header => Self::Header,
-            ParameterIn::Cookie => Self::Cookie,
+            ParameterIn::Header | ParameterIn::Cookie => unreachable!()
         }
     }
 }

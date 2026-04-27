@@ -4,19 +4,6 @@ use indoc::formatdoc;
 
 use super::*;
 
-const T1: &str = "    ";
-const T2: &str = "        ";
-const T3: &str = "            ";
-const T4: &str = "                ";
-const T5: &str = "                    ";
-const T6: &str = "                        ";
-
-macro_rules! push {
-    ($ident:ident, $($exp:expr),*) => {
-        $($ident.push_str($exp);)*
-    };
-}
-
 impl KotlinApi {
     pub fn generate(&self) -> std::io::Result<()> {
         let mut s = String::with_capacity(2 * 1024 * 1024);
@@ -40,6 +27,7 @@ impl KotlinApi {
                 package gooje.abi
 
                 import app.gooje.test.Logger
+                import okhttp3.MultipartBody
                 // import okhttp3.MultipartBody
 
                 const val API_VERSION = "{}";
@@ -64,7 +52,7 @@ impl KotlinApi {
                     companion object: FromJson<{name}> {{
                         val DEFAULT = {name}({})
 
-                        override fun from_json(json_reader: JsonReader): {name}? {{
+                        override fun from_json(json_reader: JsonReader): {name} {{
                             return {name}({})
                         }}
                     }}
@@ -106,7 +94,7 @@ impl KotlinApi {
             push!(s, "\n\n", T2);
             s.push_str("override fun from_json(json_reader: JsonReader): ");
             push! {s,
-                &se.name, "? {\n",
+                &se.name, " {\n",
                 T3, "val value = json_reader.next_string()\n",
                 T3, "return when (value) {\n"
             };
@@ -127,7 +115,7 @@ impl KotlinApi {
             "#, name = se.name,};
         }
 
-        for kob in &self.objects {
+        for (_, kob) in &self.objects {
             kob.generate(&mut s, &mut tb);
         }
 
@@ -195,7 +183,7 @@ impl TaggedEnum {
                     "\n\n",
                     T2, "val DEFAULT = ", &ident, "\n\n",
                     T2, "override fun from_json(json_reader: JsonReader): ",
-                    &ident, "? {\n",
+                    &ident, " {\n",
                     T3, "json_reader.begin_obj()\n",
                     T3, "val tag = json_reader.next_name()\n",
                     T3, "if (tag != \"", &self.tag, "\") throw JsonParseException(\"invalid tag: $tag\")\n",
@@ -257,7 +245,7 @@ impl TaggedEnum {
 
             push! {s,
                 T3, "override fun from_json(json_reader: JsonReader): ",
-                &ident, "? {\n",
+                &ident, " {\n",
                 T4, "Logger.debug(\"milf\", \"", &ident, "\")\n",
                 T4, "Logger.debug(\"milf\", json_reader.debug())\n",
                 T4, "json_reader.begin_obj()\n"
@@ -314,7 +302,7 @@ impl TaggedEnum {
         push! {s,
             T1, "companion object: FromJson<", &self.name, "> {\n",
             T2, "val DEFAULT by lazy { ", &self.name, ".", &dv.name, ".DEFAULT }\n\n",
-            T2, "override fun from_json(json_reader: JsonReader): ", &self.name, "? {\n",
+            T2, "override fun from_json(json_reader: JsonReader): ", &self.name, " {\n",
             T3, "Logger.debug(\"milf\", \"", &self.name, "\")\n",
             T3, "Logger.debug(\"milf\", json_reader.debug())\n",
             T3, "val tag = json_reader.peek_tag(\"", &self.tag, "\")\n",
@@ -333,7 +321,7 @@ impl TaggedEnum {
             "else -> throw JsonParseException(\"unknown tag $tag\")\n"
         );
 
-        push!(s, T3, "}\n", T3, "return null\n", T2, "}\n", T1, "}\n}\n\n");
+        push!(s, T3, "}\n", T2, "}\n", T1, "}\n}\n\n");
     }
 }
 
@@ -358,12 +346,10 @@ impl KotlinObject {
             s.push_str(",\n");
         }
         s.push(')');
-        if !self.is_multipart {
-            push!(s, ": IntoJson");
-        }
-        s.push_str(" {\n");
 
         if !self.is_multipart {
+            push!(s, ": IntoJson");
+            s.push_str(" {\n");
             push!(s, T1, "override fun into_json() = buildString {\n");
             push!(s, T2, "append(\"{\")\n");
             for (idx, f) in self.fields.iter().enumerate() {
@@ -373,25 +359,22 @@ impl KotlinObject {
             }
             push!(s, T2, "append(\"}\")\n");
             push!(s, T1, "}\n\n");
-        }
 
-        push!(s, T1, "companion object");
-        if !self.is_multipart {
+            push!(s, T1, "companion object");
             push!(s, ": FromJson<", &self.name, ">");
-        }
-        push!(s, " {\n", T2, "val DEFAULT = ", &self.name, "(");
-        for (idx, f) in self.fields.iter().enumerate() {
-            if idx != 0 {
-                s.push_str(", ");
-            }
-            push!(s, &f.name, " = ", &f.ty.default_value());
-        }
-        s.push_str(")\n\n");
 
-        if !self.is_multipart {
+            push!(s, " {\n", T2, "val DEFAULT = ", &self.name, "(");
+            for (idx, f) in self.fields.iter().enumerate() {
+                if idx != 0 {
+                    s.push_str(", ");
+                }
+                push!(s, &f.name, " = ", &f.ty.default_value());
+            }
+            s.push_str(")\n\n");
+
             push! {s, T2,
                 "override fun from_json(json_reader: JsonReader) : ",
-                &self.name, "? {\n",
+                &self.name, " {\n",
                 T3, "Logger.debug(\"milf\", \"", &self.name, "\")\n",
                 T3, "Logger.debug(\"milf\", json_reader.debug())\n",
                 T3, "json_reader.begin_obj()\n"
@@ -419,9 +402,10 @@ impl KotlinObject {
             }
 
             push!(s, T3, ")\n", T2, "}\n");
+            push!(s, T1, "}\n}");
         }
+        s.push_str("\n\n");
 
-        push!(s, T1, "}\n}\n\n");
     }
 }
 
@@ -432,8 +416,8 @@ impl KotlinPrim {
             Self::Int => "Int".to_string(),
             Self::Float => "Double".to_string(),
             Self::Bool => "Boolean".to_string(),
-            // Self::File => "MultipartBody.Part".to_string(),
-            Self::File => "String".to_string(),
+            Self::File => "MultipartBody.Part".to_string(),
+            // Self::File => "String".to_string(),
             Self::Ref(r) => format!("gooje.abi.{r}"),
             Self::Option(opt) => format!("{}?", opt.generate()),
             Self::Array(v) => format!("List<{}>", v.generate()),
@@ -447,7 +431,7 @@ impl KotlinPrim {
             Self::Int => "0".to_string(),
             Self::Float => "0.0".to_string(),
             Self::Bool => "false".to_string(),
-            Self::File => "\"\"".to_string(),
+            Self::File => unreachable!(),
             Self::Ref(r) => format!("gooje.abi.{r}.DEFAULT"),
             Self::Option(_) => "null".to_string(),
             Self::Array(_) => "listOf()".to_string(),
@@ -475,7 +459,7 @@ impl KotlinPrim {
                     json_reader.begin_array()
                     val temp = mutableListOf<{}>()
                     while (json_reader.has_next()) {{
-                        temp.add({} ?: throw JsonParseException("item is null"))
+                        temp.add({})
                     }}
                     json_reader.end_array()
                     temp

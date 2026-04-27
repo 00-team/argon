@@ -2,19 +2,38 @@ use std::collections::HashMap;
 
 use indexmap::IndexMap;
 
+mod routes;
 mod types;
 
-use crate::models::{
-    ApiSchema,
-    types::{ApiKind, ApiObject, ApiPrim, ApiType, def::snake_to_pascal},
+use crate::{
+    kotlin::routes::KotlinRoute,
+    models::{
+        ApiSchema,
+        types::{ApiKind, ApiObject, ApiPrim, ApiType, def::snake_to_pascal},
+    },
 };
+
+const T1: &str = "    ";
+const T2: &str = "        ";
+const T3: &str = "            ";
+const T4: &str = "                ";
+const T5: &str = "                    ";
+const T6: &str = "                        ";
+
+macro_rules! push {
+    ($ident:ident, $($exp:expr),*) => {
+        $($ident.push_str($exp);)*
+    };
+}
+pub(self) use push;
 
 // #[derive(Debug)]
 pub struct KotlinApi {
     tagged_enums: Vec<TaggedEnum>,
     str_enums: Vec<StrEnum>,
-    objects: Vec<KotlinObject>,
+    objects: IndexMap<String, KotlinObject>,
     typealias: Vec<(String, KotlinPrim)>,
+    routes: Vec<KotlinRoute>,
     api_version: String,
 }
 
@@ -29,9 +48,14 @@ impl KotlinApi {
     pub fn new(schema: &ApiSchema) -> Self {
         let mut kapi = Self {
             typealias: Vec::with_capacity(schema.types.len()),
-            objects: Vec::with_capacity(schema.types.len()),
+            objects: IndexMap::with_capacity(schema.types.len()),
             str_enums: Vec::with_capacity(schema.types.len()),
             tagged_enums: Vec::with_capacity(schema.types.len()),
+            routes: schema
+                .route
+                .values()
+                .map(|v| KotlinRoute::from(v.clone()))
+                .collect(),
             api_version: schema.api_version.clone(),
         };
         let mut intermediate =
@@ -154,19 +178,12 @@ impl KotlinApi {
                         .push((name.clone(), KotlinPrim::Ref(rr.clone())));
                 }
                 ApiKind::Object(obj) => {
-                    let mut kob = KotlinObject {
-                        name: name.clone(),
-                        fields: Vec::with_capacity(obj.len()),
-                        is_multipart: it.is_multipart,
-                    };
-                    for (k, ty, rq) in obj {
-                        kob.fields.push(ObjectField {
-                            name: k.clone(),
-                            ty: KotlinPrim::from_aty(ty),
-                            required: *rq,
-                        });
-                    }
-                    kapi.objects.push(kob);
+                    let kob = KotlinObject::from_fields(
+                        name.clone(),
+                        obj,
+                        it.is_multipart,
+                    );
+                    kapi.objects.insert(kob.name.clone(), kob);
                 }
                 ApiKind::StrEnum(se) => {
                     let en =
@@ -185,10 +202,32 @@ impl KotlinApi {
     }
 }
 
+#[derive(Debug, Clone)]
 struct KotlinObject {
     name: String,
     fields: Vec<ObjectField>,
-    is_multipart: bool
+    is_multipart: bool,
+}
+
+impl KotlinObject {
+    pub fn from_fields(
+        name: String, fields: &[(String, ApiType, bool)], is_multipart: bool,
+    ) -> Self {
+        let mut kob = KotlinObject {
+            name,
+            fields: Vec::with_capacity(fields.len()),
+            is_multipart,
+        };
+        for (k, ty, rq) in fields {
+            kob.fields.push(ObjectField {
+                name: k.clone(),
+                ty: KotlinPrim::from_aty(ty),
+                required: *rq,
+            });
+        }
+
+        kob
+    }
 }
 
 struct StrEnum {
@@ -344,6 +383,31 @@ impl KotlinPrim {
                 Self::Array(Box::new(Self::from_aty(first)))
             }
             _ => unreachable!("{ty:?}"),
+        }
+    }
+
+    pub fn gen_mfb(&self, name: &str, s: &mut String) {
+        match self {
+            Self::File => {
+                push!(s, "mfb.addPart(", name, ")\n");
+            }
+            KotlinPrim::Ref(_) => {
+                push!(
+                    s,
+                    "mfb.addPart(",
+                    name,
+                    ".into_json().toRequestBody(\"application/json\".toMediaType()))\n"
+                );
+            }
+            Self::Option(opt) => {
+                push!(s, "if (", name, " != null) ");
+                opt.gen_mfb(name, s);
+            }
+            Self::Array(ar) => {
+                push!(s, "for (item in ", name, ") ");
+                ar.gen_mfb("item", s);
+            }
+            _ => unreachable!("{name} {self:#?}"),
         }
     }
 

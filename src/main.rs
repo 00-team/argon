@@ -16,6 +16,7 @@ fn main() -> std::io::Result<()> {
 
     let kapi = kotlin::KotlinApi::new(&asp);
     kapi.generate()?;
+    kapi.gen_routes()?;
 
     Ok(())
 }
