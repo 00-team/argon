@@ -14,9 +14,9 @@ impl KotlinApi {
             .truncate(true)
             .open("argon-data/gen.kt")?;
 
-        let json_reader = std::fs::read_to_string("kotlin/json_reader.kt")?;
-        let into_json = std::fs::read_to_string("kotlin/into_json.kt")?;
-        let header = std::fs::read_to_string("kotlin/header.kt")?;
+        let json_reader = std::fs::read_to_string("argon-data/kotlin/json_reader.kt")?;
+        let into_json = std::fs::read_to_string("argon-data/kotlin/into_json.kt")?;
+        let header = std::fs::read_to_string("argon-data/kotlin/header.kt")?;
 
         kotlin.write_all(
             formatdoc! {r#"
