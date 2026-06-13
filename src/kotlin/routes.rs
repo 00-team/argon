@@ -102,15 +102,15 @@ impl KotlinApi {
 
                 package gooje.abi
 
-                import app.gooje.test.api.HttpxProps
-                import app.gooje.test.api.ApiClient
-                import app.gooje.test.api.ApiResult
-                import app.gooje.test.api.result_err
+                import app.gooje.qq.api.HttpxProps
+                import app.gooje.qq.api.ApiClient
+                import app.gooje.qq.api.ApiResult
+                import app.gooje.qq.api.result_err
                 import okhttp3.MultipartBody
                 import okhttp3.MediaType.Companion.toMediaType
                 import okhttp3.RequestBody.Companion.toRequestBody
 
-                import app.gooje.test.Logger
+                import app.gooje.qq.Logger
                 // import okhttp3.MultipartBody
 
 

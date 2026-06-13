@@ -26,7 +26,7 @@ impl KotlinApi {
 
                 package gooje.abi
 
-                import app.gooje.test.Logger
+                import app.gooje.qq.Logger
                 import okhttp3.MultipartBody
                 // import okhttp3.MultipartBody
 
