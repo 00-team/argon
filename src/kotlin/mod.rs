@@ -156,18 +156,32 @@ impl KotlinApi {
                     assert!(co.len() == 2, "{name}");
 
                     let (a, b) = (&co[0], &co[1]);
-                    let ApiKind::Union(auni) = &a.kind else { unreachable!() };
-                    let ApiKind::Object(bob) = &b.kind else { unreachable!() };
 
-                    let mut te = TaggedEnum::from_union(name, auni);
-                    for (k, ty, rq) in bob {
-                        te.common_props.push(ObjectField {
-                            name: k.clone(),
-                            ty: KotlinPrim::from_aty(ty),
-                            required: *rq,
-                        });
+                    match (&a.kind, &b.kind) {
+                        (ApiKind::Object(ao), ApiKind::Object(bo)) => {
+                            let mut ao = ao.clone();
+                            ao.extend_from_slice(bo);
+                            let kob = KotlinObject::from_fields(
+                                name.clone(),
+                                &ao,
+                                it.is_multipart,
+                            );
+                            kapi.objects.insert(kob.name.clone(), kob);
+                        }
+                        (ApiKind::Union(auni), ApiKind::Object(bob)) => {
+                            let mut te = TaggedEnum::from_union(name, auni);
+                            for (k, ty, rq) in bob {
+                                te.common_props.push(ObjectField {
+                                    name: k.clone(),
+                                    ty: KotlinPrim::from_aty(ty),
+                                    required: *rq,
+                                });
+                            }
+                            kapi.tagged_enums.push(te);
+                        }
+
+                        _ => unreachable!("unknown combo"),
                     }
-                    kapi.tagged_enums.push(te);
                 }
                 ApiKind::Union(uni) => {
                     let te = TaggedEnum::from_union(name, uni);

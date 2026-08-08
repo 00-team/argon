@@ -144,7 +144,11 @@ impl KotlinApi {
                     "application/json" => {
                         push!(s, &rsb.api_type.as_ref().unwrap().generate());
                     }
-                    _ => unreachable!(),
+                    "application/octet-stream" => {
+                        push!(s, "ArrayBuffer");
+                        // ("ArrayBuffer".to_string(), "await r.arrayBuffer()")
+                    }
+                    ct => unreachable!("unknown content type: {ct}"),
                 }
             } else {
                 push!(s, "Unit");
@@ -188,7 +192,15 @@ impl KotlinApi {
                     continue;
                 }
 
-                push!(s, T3, "\"", &p.name, "\" to ", &p.name, ".toString(),\n");
+                push!(
+                    s,
+                    T3,
+                    "\"",
+                    &p.name,
+                    "\" to ",
+                    &p.name,
+                    ".toString(),\n"
+                );
             }
 
             push!(s, T2, "),\n");
@@ -210,29 +222,24 @@ impl KotlinApi {
             };
 
             if let Some(rsb) = &kr.response_body {
-                if rsb.content_type == "text/plain" {
-                    push!(s, "rs.body.string()");
-                } else {
-                    assert_eq!(rsb.content_type, "application/json");
-                    let ty = &rsb.api_type.as_ref().unwrap();
-                    push! {s,
-                        "run {\n", 
-                        "val json_reader = gooje.abi.JsonReader(rs.body.string())\n",
-                        &ty.from_json(),
-                        "\n}"
-                        // ".from_json(JsonReader(rs.body.string()))!!"
-                    };
-                    // match ty {
-                    //     KotlinPrim::Array(a) => {
-                    //         push!(s, "run {\n");
-                    //         push!(s, "}");
-                    //     },
-                    //     KotlinPrim::Map(_) => unreachable!(),
-                    //     KotlinPrim::File => unreachable!()
-                    //     _ => {
-                    //
-                    //     }
-                    // }
+                match rsb.content_type.as_str() {
+                    "text/plain" => {
+                        push!(s, "rs.body.string()");
+                    }
+                    "application/json" => {
+                        let ty = &rsb.api_type.as_ref().unwrap();
+                        push! {s,
+                            "run {\n",
+                            "val json_reader = gooje.abi.JsonReader(rs.body.string())\n",
+                            &ty.from_json(),
+                            "\n}"
+                            // ".from_json(JsonReader(rs.body.string()))!!"
+                        };
+                    }
+                    "application/octet-stream" => {
+                        push!(s, "rs.body");
+                    }
+                    _ => unreachable!(),
                 }
             } else {
                 push!(s, "Unit");
