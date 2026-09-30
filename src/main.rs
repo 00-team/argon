@@ -9,6 +9,7 @@ mod openapi;
 fn main() -> std::io::Result<()> {
     let oas = read_to_string("argon-data/openapi.json")?;
     let oa: OpenApi = serde_json::from_str(&oas)?;
+    println!("paths: {}", oa.paths.len());
 
     // openapi::generate(&oa)?;
     let asp = models::ApiSchema::from_openapi(&oa);
