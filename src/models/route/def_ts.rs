@@ -19,6 +19,16 @@ impl ApiRoute {
 
                     (ty.ref_or_body_ts(false), "await r.json()")
                 }
+                "application/x-binjin" => {
+                    let Some(ty) = &ab.api_type else {
+                        panic!("binjin response body is none: {self:#?}");
+                    };
+
+                    (
+                        ty.ref_or_body_ts(false),
+                        "r.headers.get('Content-Type') == 'application/x-binjin' ? ud.binjin_decode(await r.bytes()) : await r.json()",
+                    )
+                }
                 _ => panic!("unknown response type: {self:#?}"),
             },
             None => ("void".to_string(), "void 0 as void"),
@@ -124,7 +134,9 @@ impl ApiRoute {
                             && let ApiKind::Prim(prim) = &arr.kind
                             && let ApiPrim::File = prim
                         {
-                            body += &format!("    body.{name}.forEach(f => data.append('{name}', f));\n");
+                            body += &format!(
+                                "    body.{name}.forEach(f => data.append('{name}', f));\n"
+                            );
                             // body.push_str("data.append");
                             continue;
                         }

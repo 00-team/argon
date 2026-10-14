@@ -141,7 +141,7 @@ impl KotlinApi {
                     "text/plain" => {
                         push!(s, "String");
                     }
-                    "application/json" => {
+                    "application/json" | "application/x-binjin" => {
                         push!(s, &rsb.api_type.as_ref().unwrap().generate());
                     }
                     "application/octet-stream" => {
@@ -235,6 +235,9 @@ impl KotlinApi {
                             "\n}"
                             // ".from_json(JsonReader(rs.body.string()))!!"
                         };
+                    }
+                    "application/x-binjin" => {
+                        push!(s, "Cbor.decodeFromByteArray(rs.body)");
                     }
                     "application/octet-stream" => {
                         push!(s, "rs.body");
