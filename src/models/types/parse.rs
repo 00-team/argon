@@ -226,8 +226,9 @@ impl ApiType {
                 let item =
                     ApiType::parse_openapi(None, item, parents, types, schemas);
 
-                if a.max_items == a.min_items && a.max_items.is_some() {
-                    let len = a.max_items.unwrap();
+                if a.max_items == a.min_items
+                    && let Some(len) = a.max_items
+                {
                     // println!("len: {len}");
                     aty.kind = ApiKind::Tuple(vec![item; len]);
                     // return aty;

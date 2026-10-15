@@ -1,5 +1,7 @@
 use indoc::formatdoc;
 
+use crate::utils::{default_name, pascal_to_snake};
+
 use super::*;
 
 impl ApiPrim {
@@ -17,29 +19,17 @@ impl ApiPrim {
         }
     }
 
-    pub fn ts_def(&self) -> &'static str {
+    pub fn ts_default(&self) -> &'static str {
         match self {
             ApiPrim::Null => "null",
             ApiPrim::Str => "''",
             ApiPrim::Int => "0",
             ApiPrim::Float => "0",
-            ApiPrim::File => "new File()",
+            ApiPrim::File => "new File([], '')",
             ApiPrim::Bool => "false",
             ApiPrim::Option(_) => "null",
         }
     }
-}
-
-pub fn pascal_to_snake(value: &str) -> String {
-    let mut out = String::with_capacity(value.len() * 2);
-    for (i, ch) in value.chars().enumerate() {
-        if ch.is_uppercase() && i != 0 {
-            out.push('_');
-        }
-        out.push(ch);
-    }
-
-    if let Some(out) = out.strip_suffix('_') { out.to_string() } else { out }
 }
 
 impl ApiType {
@@ -61,9 +51,8 @@ impl ApiType {
                     }
                 }
 
-                if def && self.name.is_some() {
+                if def && let Some(name) = &self.name {
                     out.push_str(";\n");
-                    let name = self.name.as_ref().unwrap();
                     let snake = pascal_to_snake(name);
                     let cname = snake.to_uppercase();
                     out.push_str("export const ");
@@ -132,5 +121,66 @@ impl ApiType {
         }
 
         format!("({})", self.body_ts(false, for_input))
+    }
+
+    pub fn body_ts_default(&self) -> String {
+        match &self.kind {
+            ApiKind::Prim(p) => p.ts_default().to_string(),
+            ApiKind::Unknown => panic!("unknown type: {self:?}"),
+            ApiKind::Ref(r) => default_name(r),
+            ApiKind::Recursive => unreachable!("recursive"),
+            ApiKind::StrEnum(e) => {
+                format!("'{}'", e.first().unwrap())
+            }
+            ApiKind::Array(_) => "[]".to_string(),
+            ApiKind::Union(u) => u.first().unwrap().default_ref_or_body_ts(),
+            ApiKind::Combo(c) => {
+                let mut out = String::with_capacity(512);
+                out.push('{');
+
+                for aty in c {
+                    out.push_str("...");
+                    out += &aty.default_ref_or_body_ts();
+                    out.push(',');
+                }
+
+                out.push('}');
+                out
+            }
+            ApiKind::Map(_) => "{}".to_string(),
+            ApiKind::Object(o) => {
+                let mut inner = String::with_capacity(1024);
+                inner.push('{');
+                for (p, v, rq) in o {
+                    if !rq {
+                        continue;
+                    }
+                    inner.push_str(p);
+                    inner.push(':');
+                    inner.push_str(&v.default_ref_or_body_ts());
+                    inner.push(',');
+                }
+                inner.push('}');
+                inner
+            }
+            ApiKind::Tuple(t) => {
+                let mut inner = String::with_capacity(1024);
+                inner.push('[');
+                for v in t {
+                    inner.push_str(&v.default_ref_or_body_ts());
+                    inner.push(',');
+                }
+                inner.push(']');
+                inner
+            }
+        }
+    }
+
+    pub fn default_ref_or_body_ts(&self) -> String {
+        if let Some(n) = &self.name {
+            return default_name(n);
+        }
+
+        format!("({})", self.body_ts_default())
     }
 }

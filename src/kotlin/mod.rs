@@ -27,7 +27,7 @@ macro_rules! push {
         $($ident.push_str($exp);)*
     };
 }
-pub(self) use push;
+use push;
 
 // #[derive(Debug)]
 pub struct KotlinApi {

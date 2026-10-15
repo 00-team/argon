@@ -14,8 +14,10 @@ impl KotlinApi {
             .truncate(true)
             .open("argon-data/gen.kt")?;
 
-        let json_reader = std::fs::read_to_string("argon-data/kotlin/json_reader.kt")?;
-        let into_json = std::fs::read_to_string("argon-data/kotlin/into_json.kt")?;
+        let json_reader =
+            std::fs::read_to_string("argon-data/kotlin/json_reader.kt")?;
+        let into_json =
+            std::fs::read_to_string("argon-data/kotlin/into_json.kt")?;
         let header = std::fs::read_to_string("argon-data/kotlin/header.kt")?;
 
         kotlin.write_all(
@@ -57,7 +59,7 @@ impl KotlinApi {
                         }}
                     }}
                 }}
-            "#, kp.generate(), kp.default_value(), kp.from_json(),
+            "#, kp.generate(), kp.default_value(), kp.def_from_json(),
             };
 
             tb += &formatdoc! {r#"
@@ -214,16 +216,16 @@ impl TaggedEnum {
                 r#"append("""{{"{}": "{}"""")"#,
                 self.tag, v.key
             ));
-            s.push_str("\n");
+            s.push('\n');
             for f in self.common_props.iter() {
                 s.push_str(T3);
-                f.into_json(s, false);
+                f.def_into_json(s, false);
                 s.push('\n');
             }
 
             for f in v.fields.iter() {
                 s.push_str(T3);
-                f.into_json(s, false);
+                f.def_into_json(s, false);
                 s.push('\n');
             }
 
@@ -261,10 +263,10 @@ impl TaggedEnum {
             push!(s, "\n", T4, "while (json_reader.has_next()) {\n");
             push!(s, T5, "when (json_reader.next_name()) {\n");
             for f in self.common_props.iter() {
-                push! {s, T6, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.from_json(), "\n"};
+                push! {s, T6, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.def_from_json(), "\n"};
             }
             for f in v.fields.iter() {
-                push! {s, T6, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.from_json(), "\n"};
+                push! {s, T6, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.def_from_json(), "\n"};
             }
             push! {s,
                 T6, "\"", &self.tag, "\" -> if (json_reader.next_string() != \"",
@@ -354,7 +356,7 @@ impl KotlinObject {
             push!(s, T2, "append(\"{\")\n");
             for (idx, f) in self.fields.iter().enumerate() {
                 s.push_str(T2);
-                f.into_json(s, idx == 0);
+                f.def_into_json(s, idx == 0);
                 s.push('\n');
             }
             push!(s, T2, "append(\"}\")\n");
@@ -386,7 +388,7 @@ impl KotlinObject {
             push!(s, T3, "while (json_reader.has_next()) {\n");
             push!(s, T4, "when (json_reader.next_name()) {\n");
             for f in self.fields.iter() {
-                push! {s, T5, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.from_json(), "\n"};
+                push! {s, T5, "\"", &f.name ,"\" -> unn_", &f.name, " = ", &f.ty.def_from_json(), "\n"};
             }
             push! {s, T5, "else -> json_reader.skip_value()\n"};
             push! {s, T4, "}\n", T3, "}\n"};
@@ -405,7 +407,6 @@ impl KotlinObject {
             push!(s, T1, "}\n}");
         }
         s.push_str("\n\n");
-
     }
 }
 
@@ -439,7 +440,7 @@ impl KotlinPrim {
         }
     }
 
-    pub fn from_json(&self) -> String {
+    pub fn def_from_json(&self) -> String {
         match self {
             Self::Str => "json_reader.next_string()".to_string(),
             Self::Int => "json_reader.next_int()".to_string(),
@@ -450,7 +451,7 @@ impl KotlinPrim {
             Self::Option(kp) => {
                 format!(
                     "if (json_reader.is_next_null()) {{ json_reader.next_null(); null }} else {{ {} }}",
-                    kp.from_json()
+                    kp.def_from_json()
                 )
             }
             Self::Array(v) => {
@@ -465,7 +466,7 @@ impl KotlinPrim {
                     temp
                 }}"#,
                     v.generate(),
-                    v.from_json()
+                    v.def_from_json()
                 )
             }
             Self::Map(v) => {
@@ -481,13 +482,13 @@ impl KotlinPrim {
                     temp
                 }}"#,
                     v.generate(),
-                    v.from_json()
+                    v.def_from_json()
                 )
             }
         }
     }
 
-    pub fn into_json(&self, val: &str, s: &mut String) {
+    pub fn def_into_json(&self, val: &str, s: &mut String) {
         match self {
             KotlinPrim::Str => {
                 s.push_str(&format!("append(into_json({val}))"));
@@ -538,10 +539,9 @@ impl ObjectField {
         s.push_str(&self.ty.generate());
         if !self.required {
             if !self.ty.is_option() {
-                s.push_str("?");
+                s.push('?');
             }
             s.push_str(" = null");
-            return;
         }
         // if let Some(dv) = &self.ty.default_value() {
         //     s.push_str(" = ");
@@ -549,7 +549,7 @@ impl ObjectField {
         // }
     }
 
-    pub fn into_json(&self, s: &mut String, is_first: bool) {
+    pub fn def_into_json(&self, s: &mut String, is_first: bool) {
         let comma = if is_first { "" } else { "," };
         s.push_str(&format!(r#"append("""{comma}"{}":""");"#, self.name));
 
@@ -564,6 +564,6 @@ impl ObjectField {
         //     return;
         // }
 
-        self.ty.into_json(&self.name, s);
+        self.ty.def_into_json(&self.name, s);
     }
 }

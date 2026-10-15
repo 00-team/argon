@@ -6,6 +6,7 @@ use route::ApiRoute;
 use types::ApiType;
 
 use crate::openapi::OpenApi;
+use crate::utils::default_name;
 use std::collections::HashSet;
 use std::io::Write;
 
@@ -122,6 +123,11 @@ impl ApiSchema {
             let body = r.body_ts(true, false);
             let exp = format!("export type {n} = {body};\n");
             ts.write_all(exp.as_bytes())?;
+
+            let defname = default_name(n);
+            let body = r.body_ts_default();
+            let defalt = format!("export const {defname}: {n} = {body};\n");
+            ts.write_all(defalt.as_bytes())?;
 
             // let body = r.def_dart(false);
             // // let exp = format!("typedef {n} = {body};\n");

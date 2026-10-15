@@ -30,6 +30,7 @@ pub struct Ref {
     pub summary: String,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged, rename_all = "camelCase")]
 pub enum OaSchema {

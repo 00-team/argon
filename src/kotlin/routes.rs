@@ -76,7 +76,7 @@ impl From<ApiResponseBody> for KotlinApiResponseBody {
     fn from(value: ApiResponseBody) -> Self {
         Self {
             content_type: value.content_type,
-            api_type: value.api_type.as_ref().map(|v| KotlinPrim::from_aty(v)),
+            api_type: value.api_type.as_ref().map(KotlinPrim::from_aty),
         }
     }
 }
@@ -231,7 +231,7 @@ impl KotlinApi {
                         push! {s,
                             "run {\n",
                             "val json_reader = gooje.abi.JsonReader(rs.body.string())\n",
-                            &ty.from_json(),
+                            &ty.def_from_json(),
                             "\n}"
                             // ".from_json(JsonReader(rs.body.string()))!!"
                         };
