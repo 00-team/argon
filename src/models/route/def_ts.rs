@@ -178,7 +178,7 @@ impl ApiRoute {
                 {body}
                 let ovh = override.headers || {{}};
                 delete override.headers;
-                let r = await ud.httpx({{
+                let [r, p] = await ud.httpx({{
                     url: `{ts_url}`,
                     method: '{method_upper}',
                     params: {{ {query_params} }},
@@ -188,7 +188,7 @@ impl ApiRoute {
                 }})
 
                 return {{
-                    r: r.clone(),
+                    r: r.clone(), p,
                     status: r.status,
                     body: {fetch_res},
                     ok(): this is ud.Ok<{outy}> {{
