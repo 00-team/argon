@@ -5,6 +5,7 @@ use openapi::OpenApi;
 mod kotlin;
 mod models;
 mod openapi;
+mod utils;
 
 fn main() -> std::io::Result<()> {
     let oas = read_to_string("argon-data/openapi.json")?;

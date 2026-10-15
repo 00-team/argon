@@ -3,7 +3,7 @@ use crate::openapi::path::ParameterIn;
 use super::types::ApiType;
 
 mod def_ts;
-mod def_dart;
+// mod def_dart;
 mod parse;
 
 #[derive(Debug, Clone)]

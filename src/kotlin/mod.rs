@@ -9,9 +9,11 @@ use crate::{
     kotlin::routes::KotlinRoute,
     models::{
         ApiSchema,
-        types::{ApiKind, ApiObject, ApiPrim, ApiType, def::snake_to_pascal},
+        types::{ApiKind, ApiObject, ApiPrim, ApiType},
     },
 };
+
+use crate::utils::snake_to_pascal;
 
 const T1: &str = "    ";
 const T2: &str = "        ";
