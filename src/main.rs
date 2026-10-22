@@ -12,13 +12,18 @@ fn main() -> std::io::Result<()> {
     let oa: OpenApi = serde_json::from_str(&oas)?;
     println!("paths: {}", oa.paths.len());
 
+    let no_kotlin =
+        std::env::args().into_iter().any(|a| a.contains("no-kotlin"));
+
     // openapi::generate(&oa)?;
     let asp = models::ApiSchema::from_openapi(&oa);
     asp.generate()?;
 
-    let kapi = kotlin::KotlinApi::new(&asp);
-    kapi.generate()?;
-    kapi.gen_routes()?;
+    if !no_kotlin {
+        let kapi = kotlin::KotlinApi::new(&asp);
+        kapi.generate()?;
+        kapi.gen_routes()?;
+    }
 
     Ok(())
 }
